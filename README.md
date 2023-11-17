@@ -5,7 +5,8 @@
 Director - на данный момент один человек, который ввёл правильное ключевое слово
 User - любой пользователь
 
-Возможности для пользователей:\n
+Возможности для пользователей:
+
   Director:
     /Check_Calendar - получить свой календарь на сегодня
     /Check_Accesses - получить список всех людей, кому мы дали доступ и какой
@@ -20,16 +21,22 @@ User - любой пользователь
 
 
 Необходимые функции для БД:
+```python
 def add_info(name, surname, company, telegram_id, class_name):
   users.update_one({ "$set": { "name": name, "surname": surname, "company": company, "id": telegram_id, "class": class_name} })
+```
 
 Пример вызова:
+
 add_info(owner.name, owner.surname, owner.company, owner.id, 'owner'), где owner - объект внутри бота
 
 
 def get_user(telegram_id) - получить всю информацию о пользователе.
+
 Пример вызова: 
+
   name, surname, company, class_name = get_user(telegram_id)
+
 
 Class_id - это или User или Director
 
