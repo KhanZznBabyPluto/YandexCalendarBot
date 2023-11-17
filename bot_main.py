@@ -95,15 +95,6 @@ async def check_name(message: types.Message):
 @dp.message_handler(content_types=['text'], state=ProfileStatesGroup.name)
 async def load_name(message: types.Message) -> None:
     global user
-    # if not check_key(["name"], [message.text]):
-    #     await message.answer(text = Action_for_stop)
-    #     await dp.bot.stop_poll(chat_id=message.from_user.id, message_id=message.message_id)
-    #     await UserStates.INACTIVE.set()
-
-    # if message == 'admin':
-    #     await message.answer('Введите пароль')
-    #     await ProfileStatesGroup.password()
-    # else:
     user.update_name(message.text, message.from_user.id)
     await message.answer('Теперь отправьте свою фамилию')
     await ProfileStatesGroup.next()
@@ -117,11 +108,6 @@ async def check_surname(message: types.Message):
 @dp.message_handler(state=ProfileStatesGroup.surname)
 async def load_surname(message: types.Message) -> None:
     global user
-    # if not check_key(["name", "surname"], [user.name, message.text]):
-    #     await message.answer(text = Action_for_stop)
-    #     await dp.bot.stop_poll(chat_id=message.from_user.id, message_id=message.message_id)
-    #     await UserStates.INACTIVE.set()
-
     user.update_surname(message.text)
     await message.answer('Введите название вашей компании')
     await ProfileStatesGroup.next()
@@ -135,11 +121,6 @@ async def check_company(message: types.Message):
 async def load_company(message: types.Message) -> None:
     global user
     user.update_company(message.text)
-    # if not check_key(["name", "surname", "room"], [user.name, user.surname, user.room]):
-    #     await message.answer(text = Action_for_stop)
-    #     await dp.bot.stop_poll(chat_id=message.from_user.id, message_id=message.message_id)
-    #     await UserStates.INACTIVE.set()
-
     await message.answer('Если вы владелец календаря, введите кодовое слово')
     await ProfileStatesGroup.next()
 
@@ -153,7 +134,7 @@ async def check_owner(message: types.Message, state: FSMContext) -> None:
         add_info(owner.name, owner.surname, owner.company, owner.id, 'owner')
         await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
     else:
-        add_info(user.name, user.surname, user.company, message.text, 'owner')
+        add_info(user.name, user.surname, user.company, message.text, 'user')
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
 
     await state.finish()

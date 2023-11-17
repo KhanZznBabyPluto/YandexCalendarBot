@@ -126,9 +126,8 @@ def give_name_by_id(telegram_id):
   return users.find_one({"id": telegram_id})['name']
 
 
-def add_info(name, surname, room, phone, telegram_id):
-  filt = {"name": name, "surname": surname, "room": room}
-  users.update_one(filt, { "$set": { "phone" : phone, "id": telegram_id } } )
+def add_info(name, surname, company, telegram_id, class_name):
+  users.update_one({ "$set": { "name": name, "surname": surname, "company": company, "id": telegram_id, "class": class_name} })
 
 def give_user_number_orders(telegram_id):
   return users.find_one({ "id": telegram_id })['number_orders']
