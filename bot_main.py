@@ -74,9 +74,11 @@ async def cmd_create(message: types.Message) -> None:
     user = User()
     if check_key(["id"], [message.from_user.id]):
         await message.answer("Вы уже подключены, авторизовываться не надо")
-        user.update_name(give_name_by_id(message.from_user.id), message.from_user.id)
+        user_id = message.from_user.id
+        name, surname, company, class_name = get_user(user_id)
+        user.update_all(name, surname, company, user_id)
 
-        if check_key(["id", "class"], [message.from_user.id, 'Director']):
+        if class_name == 'Director':
             global owner
             owner = user.change_for_owner()
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
@@ -159,7 +161,7 @@ async def check_access(message: types.Message):
 async def ask_for_access(message: types.Message):
     global user
     global owner
-    owner = get_owner()
+    owner = get_user()
     await message.answer(text=Text_for_Ask)
     await bot.send_message(chat_id = owner.id, text=f'Вам пришёл запрос на доступ к вашему графику от {user.name} {user.surname} из {user.company}, {user.id}', reply_markup=get_owner_choice_kb())
 

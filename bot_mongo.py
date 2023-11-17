@@ -122,9 +122,6 @@ def check_key(keys, values):
     return True
   return False 
 
-def give_name_by_id(telegram_id):
-  return users.find_one({"id": telegram_id})['name']
-
 
 def add_info(name, surname, company, telegram_id, class_name):
   users.update_one({ "$set": { "name": name, "surname": surname, "company": company, "id": telegram_id, "class": class_name} })
