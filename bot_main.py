@@ -6,9 +6,11 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from bot_keyboard import get_kb, get_owner_choice_kb, reactivate_kb
 
 from bot_token import TOKEN_API
-from bot_classes import User, Director
+from bot_classes import User, Owner
 from bot_mongo import *
 
+
+times = ['9.00-10.00', '10.00-11.00', '11.00-12.00', '12.00-13.00', '13.00-14.00', '14.00-15.00']
 
 users_col = connect_collection("users")
 book_col = connect_collection("book")
@@ -59,13 +61,13 @@ async def cmd_cancel(message: types.Message):
 @dp.message_handler(commands=['Reactivate_bot'], state=UserStates.INACTIVE)
 async def reactivate_bot(message: types.Message):
     await message.answer('Бот перезапущен')
-    await message.answer(text= Action_for_start, parse_mode = 'HTML', reply_markup=get_kb())
+    await message.answer(text= Action_for_start, parse_mode = 'HTML', reply_markup=get_kb(0,0))
     await UserStates.ACTIVE.set()
 
 
 @dp.message_handler(commands=['Start'])
 async def cmd_start(message: types.Message) -> None:
-    await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb())
+    await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0, 0))
 
 
 @dp.message_handler(commands=['Authorize'])

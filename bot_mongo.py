@@ -168,7 +168,7 @@ def fill_doc(low_date = datetime.datetime.now() - datetime.timedelta(days=30), h
     df = pd.DataFrame(data)
 
 
-def get_user():
+def get_user(telegram_id):
     # owner = Owner()
     # owner.load_info() 
     # return owner
