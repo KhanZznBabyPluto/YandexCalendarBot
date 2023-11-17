@@ -161,8 +161,16 @@ async def ask_for_access(message: types.Message):
     global owner
     owner = get_owner()
     await message.answer(text=Text_for_Ask)
-    await bot.send_message(chat_id = owner.id, text=f'Вам пришёл запрос на доступ к вашему графике от {user.name} {user.surname} из {user.company}, {user.id}', reply_markup=get_owner_choice_kb())
+    await bot.send_message(chat_id = owner.id, text=f'Вам пришёл запрос на доступ к вашему графику от {user.name} {user.surname} из {user.company}, {user.id}', reply_markup=get_owner_choice_kb())
 
+
+@dp.callback_query_handler(text='no_access')
+async def nine_to_ten_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+    global owner
+
+
+    await callback.answer()
 
 @dp.callback_query_handler(text='encrypted')
 async def nine_to_ten_handler(callback: types.CallbackQuery):
@@ -171,7 +179,6 @@ async def nine_to_ten_handler(callback: types.CallbackQuery):
 
 
     await callback.answer()
-
 
 @dp.callback_query_handler(text='5')
 async def four_to_fif_handler(callback: types.CallbackQuery):

@@ -19,10 +19,10 @@ def get_kb(flag, flag_access) -> ReplyKeyboardMarkup:
 
 def get_owner_choice_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
-    button = InlineKeyboardButton(text='Предоставить слоты, не показывая чем вы заняты', callback_data='encrypted')
-    kb.add(button)
-    button = InlineKeyboardButton(text='Предоставить полноценный доступ к просмотру', callback_data='full_access')
-    kb.add(button)
+    button_1 = InlineKeyboardButton(text='Не предоставлять доступ', callback_data='no_access')
+    button_2 = InlineKeyboardButton(text='Предоставить слоты, не показывая чем вы заняты', callback_data='encrypted')
+    button_3 = InlineKeyboardButton(text='Предоставить полноценный доступ к просмотру', callback_data='full_access')
+    kb.add(button_1, button_2, button_3)
 
     return kb
 
