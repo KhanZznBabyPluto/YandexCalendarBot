@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from bot_keyboard import get_kb, get_owner_kb, get_owner_choice_kb, reactivate_kb
+from bot_keyboard import get_kb, get_owner_choice_kb, reactivate_kb
 
 from bot_token import TOKEN_API
 from bot_classes import User, Director

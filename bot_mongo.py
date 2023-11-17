@@ -171,7 +171,8 @@ def fill_doc(low_date = datetime.datetime.now() - datetime.timedelta(days=30), h
     df = pd.DataFrame(data)
 
 
-def get_owner():
-    owner = Owner()
+def get_user():
+    # owner = Owner()
     # owner.load_info() 
-    return owner
+    # return owner
+    pass

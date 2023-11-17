@@ -7,8 +7,8 @@ def get_kb(flag, flag_access) -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton('/Authorize'))
     if flag:
+        kb.add(KeyboardButton('/Check_Calendar'))
         if flag_access:
-            kb.add(KeyboardButton('/Check_Calendar'))
             kb.add(KeyboardButton('/Check_Accesses'))
         else:
             kb.add(KeyboardButton('/Ask_for_Access'))
