@@ -27,5 +27,16 @@ def get_owner_choice_kb() -> InlineKeyboardMarkup:
     return kb
 
 
+def get_day_choice_kb() -> InlineKeyboardButton:
+    kb = InlineKeyboardMarkup(row_width=1)
+    button_1 = InlineKeyboardButton(text='На 1 день', callback_data='one')
+    button_2 = InlineKeyboardButton(text='На 7 дней', callback_data='seven')
+    button_3 = InlineKeyboardButton(text='На 14 дней', callback_data='fourteen')
+    button_4 = InlineKeyboardButton(text='На 30 дней', callback_data='thirty')
+    button_5 = InlineKeyboardButton(text='Свой промежуток', callback_data='own_choice')
+    kb.add(button_1, button_2, button_3, button_4, button_5)
+
+    return kb
+
 reactivate_kb = ReplyKeyboardMarkup(resize_keyboard=True)
 reactivate_kb.add(KeyboardButton('/Reactivate_bot'))

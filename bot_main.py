@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from bot_keyboard import get_kb, get_owner_choice_kb, reactivate_kb
+from bot_keyboard import get_kb, get_owner_choice_kb, get_day_choice_kb, reactivate_kb
 
 from bot_token import TOKEN_API
 from bot_classes import User, Owner
@@ -177,12 +177,71 @@ async def nine_to_ten_handler(callback: types.CallbackQuery):
     await callback.answer()
 
 @dp.callback_query_handler(text='encrypted')
-async def nine_to_ten_handler(callback: types.CallbackQuery):
+async def encrypted_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+    await bot.send_message(text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb())
     global owner
 
 
     await callback.answer()
+
+
+@dp.callback_query_handler(text='full_access')
+async def full_access_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+    await bot.send_message(text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb())
+    global owner
+
+
+    await callback.answer()
+
+
+
+@dp.callback_query_handler(text='one')
+async def one_day_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+    
+
+    await callback.answer()
+
+@dp.callback_query_handler(text='seven')
+async def seven_days_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+    
+
+    await callback.answer()
+
+@dp.callback_query_handler(text='fourteen')
+async def fourteen_days_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+    
+
+    await callback.answer()
+
+@dp.callback_query_handler(text='thirty')
+async def thirty_days_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+    
+
+    await callback.answer()
+
+@dp.callback_query_handler(text='own_choice')
+async def own_choice_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+    await bot.send_message(text='На сколько дней вы хотите дать доступ?')
+
+    await callback.answer()
+
+
+
+
+@dp.message_handler(lambda message: not message.text.isdigit())
+async def own_choice_message_handler(message: types.Message, state: FSMContext):
+    await bot.send_message(text=f'Доступ предоставлен на {message.text} дня/дней', reply_markup= None)
+    await state.finish()
+
+
+
 
 @dp.callback_query_handler(text='5')
 async def four_to_fif_handler(callback: types.CallbackQuery):
