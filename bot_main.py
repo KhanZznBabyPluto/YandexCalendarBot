@@ -16,6 +16,10 @@ users_col = connect_collection("users")
 book_col = connect_collection("book")
 user = User()
 
+
+client_id = '68864fc64a7842c1948567f02d1bdf4c'
+client_secret = '9f10504cfd3d41e5a5650b277ddae6d7'
+redirect_uri = 'https://oauth.yandex.ru/verification_code'
 storage = MemoryStorage()
 # PROXY_URL = "http://proxy.server:3128"
 # bot = Bot(token=TOKEN_API, proxy=PROXY_URL)
@@ -28,9 +32,7 @@ class UserStates(StatesGroup):
     INACTIVE = State() 
 
 class ProfileStatesGroup(StatesGroup):
-    name = State()
-    surname = State()
-    company = State()
+    keyword = State()
 
 
 Action_for_start = """
@@ -88,38 +90,9 @@ async def cmd_create(message: types.Message) -> None:
             await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
 
     else:
-        await message.answer("Давайте привяжем вас к вашему аккаунту. Введите ваше имя")
-        await ProfileStatesGroup.name.set() 
+        auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
+        await message.answer(text=f'Давайте привяжем вас к вашему аккаунту.\nДля этого авторизуйтесь по ссылке:\n{auth_url}') 
 
-
-@dp.message_handler(lambda message: not message.text, state=ProfileStatesGroup.name)
-async def check_name(message: types.Message):
-    await message.reply('Это не имя!')
-
-@dp.message_handler(content_types=['text'], state=ProfileStatesGroup.name)
-async def load_name(message: types.Message) -> None:
-    global user
-    user.update_name(message.text, message.from_user.id)
-    await message.answer('Теперь отправьте свою фамилию')
-    await ProfileStatesGroup.next()
-
-
-
-@dp.message_handler(lambda message: not message.text, state=ProfileStatesGroup.surname)
-async def check_surname(message: types.Message):
-    await message.reply('Это не фамилия!')
-
-@dp.message_handler(state=ProfileStatesGroup.surname)
-async def load_surname(message: types.Message) -> None:
-    global user
-    user.update_surname(message.text)
-    await message.answer('Введите название вашей компании')
-    await ProfileStatesGroup.next()
-
-
-@dp.message_handler(lambda message: not message.text, state=ProfileStatesGroup.company)
-async def check_company(message: types.Message):
-    await message.reply('Это не название!')
 
 @dp.message_handler(state=ProfileStatesGroup.company)
 async def load_company(message: types.Message) -> None:
