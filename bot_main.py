@@ -1,13 +1,18 @@
+import requests
+import datetime
 from aiogram import types, executor, Bot, Dispatcher
 from aiogram.types import CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from bot_keyboard import get_kb, get_owner_choice_kb, get_day_choice_kb, reactivate_kb
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram.types import ParseMode
+
 
 from bot_token import TOKEN_API
 from bot_classes import User, Owner
 from bot_mongo import *
+from bot_keyboard import get_kb, get_owner_choice_kb, get_day_choice_kb, reactivate_kb
 
 
 times = ['9.00-10.00', '10.00-11.00', '11.00-12.00', '12.00-13.00', '13.00-14.00', '14.00-15.00']
@@ -32,6 +37,7 @@ class UserStates(StatesGroup):
     INACTIVE = State() 
 
 class ProfileStatesGroup(StatesGroup):
+    code = State()
     keyword = State()
 
 
@@ -76,42 +82,71 @@ async def cmd_start(message: types.Message) -> None:
 async def cmd_create(message: types.Message) -> None:
     global user
     user = User()
-    if check_key(["id"], [message.from_user.id]):
-        await message.answer("Вы уже подключены, авторизовываться не надо")
-        user_id = message.from_user.id
-        name, surname, company, class_name = get_user(user_id)
-        user.update_all(name, surname, company, user_id)
+    # if check_key(["id"], [message.from_user.id]):
+    #     await message.answer("Вы уже подключены, авторизовываться не надо")
+    #     user_id = message.from_user.id
+    #     name, surname, company, class_name = get_user(user_id)
+    #     user.update_all(name, surname, company, user_id)
 
-        if class_name == 'Director':
-            global owner
-            owner = user.change_for_owner()
-            await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
-        else:
-            await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
+    #     if class_name == 'Director':
+    #         global owner
+    #         owner = user.change_for_owner()
+    #         await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
+    #     else:
+    #         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
 
+    # else:
+    auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
+    await message.answer(text=f'Давайте привяжем вас к вашему аккаунту.\nДля этого авторизуйтесь по ссылке:\n{auth_url}')
+    await message.answer(text=f'Далее отправьте мне код для подтверждения') 
+
+
+@dp.message_handler(lambda message: not message.text.isdigit() or int(message.text) < 1000000 or int(message.text) > 9999999)
+async def code_error_handler(message: types.Message) -> None:
+    await message.reply(text='Неправильный формат ввода')
+
+
+@dp.message_handler(state=ProfileStatesGroup.code)
+async def code_handler(message: types.Message) -> None:
+    await bot.send_message(text='Код обрабатывается')
+    data = {
+    'grant_type': 'authorization_code',
+    'code': message.text,
+    'client_id': client_id,
+    'client_secret': client_secret,
+    }
+    token_url = 'https://oauth.yandex.ru/token'
+    response = requests.post(token_url, data=data)
+    token_data = response.json()
+    access_token = token_data.get('access_token')
+    headers = {
+    'Authorization': f'OAuth {access_token}',
+    }
+
+    url = 'https://login.yandex.ru/info'
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        global user_info
+        user_info = response.json()
+        await bot.send_message(text=f'{user_info}')
+        await bot.send_message(text=f'Если вы знаете ключевое слово, введите его. Иначе, напишите No')
+        await ProfileStatesGroup.next()
     else:
-        auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
-        await message.answer(text=f'Давайте привяжем вас к вашему аккаунту.\nДля этого авторизуйтесь по ссылке:\n{auth_url}') 
+        await bot.send_message(text='Неверный код')
 
 
-@dp.message_handler(state=ProfileStatesGroup.company)
-async def load_company(message: types.Message) -> None:
-    global user
-    user.update_company(message.text)
-    await message.answer('Если вы владелец календаря, введите кодовое слово')
-    await ProfileStatesGroup.next()
-
-
-@dp.message_handler(lambda message: message.text)
+@dp.message_handler(lambda message: message.text, state=ProfileStatesGroup.keyword)
 async def check_owner(message: types.Message, state: FSMContext) -> None:
     global user
     if message.text == 'Director':
-        global owner
-        owner = user.change_for_owner()
-        add_info(owner.name, owner.surname, owner.company, owner.id, 'owner')
+        await bot.send_message(text='Вы теперь царь горы!')
+        # global owner
+        # owner = user.change_for_owner()
+        # add_info(owner.name, owner.surname, owner.company, owner.id, 'owner')
         await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
     else:
-        add_info(user.name, user.surname, user.company, message.text, 'user')
+        # add_info(user.name, user.surname, user.company, message.text, 'user')
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
 
     await state.finish()
