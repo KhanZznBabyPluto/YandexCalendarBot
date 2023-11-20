@@ -99,9 +99,10 @@ async def cmd_create(message: types.Message) -> None:
     auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
     await message.answer(text=f'Давайте привяжем вас к вашему аккаунту.\nДля этого авторизуйтесь по ссылке:\n{auth_url}')
     await message.answer(text=f'Далее отправьте мне код для подтверждения') 
+    await ProfileStatesGroup.code.set()
 
 
-@dp.message_handler(lambda message: not message.text.isdigit() or int(message.text) < 1000000 or int(message.text) > 9999999)
+@dp.message_handler(lambda message: not message.text.isdigit() or int(message.text) < 1000000 or int(message.text) > 9999999, state=ProfileStatesGroup.code)
 async def code_error_handler(message: types.Message) -> None:
     await message.reply(text='Неправильный формат ввода')
 
@@ -129,11 +130,11 @@ async def code_handler(message: types.Message) -> None:
     if response.status_code == 200:
         global user_info
         user_info = response.json()
-        await bot.send_message(text=f'{user_info}')
-        await bot.send_message(text=f'Если вы знаете ключевое слово, введите его. Иначе, напишите No')
+        await message.reply(text=f'{user_info}')
+        await message.reply(text=f'Если вы знаете ключевое слово, введите его. Иначе, напишите No')
         await ProfileStatesGroup.next()
     else:
-        await bot.send_message(text='Неверный код')
+        await message.reply(text='Неверный код')
 
 
 @dp.message_handler(lambda message: message.text, state=ProfileStatesGroup.keyword)
