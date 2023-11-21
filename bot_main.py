@@ -14,9 +14,6 @@ from bot_classes import User, Owner
 from bot_mongo import *
 from bot_keyboard import get_kb, get_owner_choice_kb, get_day_choice_kb, reactivate_kb
 
-
-times = ['9.00-10.00', '10.00-11.00', '11.00-12.00', '12.00-13.00', '13.00-14.00', '14.00-15.00']
-
 users_col = connect_collection("users")
 book_col = connect_collection("book")
 user = User()
@@ -104,7 +101,7 @@ async def cmd_create(message: types.Message) -> None:
 
 @dp.message_handler(lambda message: not message.text.isdigit() or int(message.text) < 1000000 or int(message.text) > 9999999, state=ProfileStatesGroup.code)
 async def code_error_handler(message: types.Message) -> None:
-    await message.reply(text='Неправильный формат ввода')
+    await message.answer(text='Неправильный формат ввода')
 
 
 @dp.message_handler(state=ProfileStatesGroup.code)
@@ -130,18 +127,18 @@ async def code_handler(message: types.Message) -> None:
     if response.status_code == 200:
         global user_info
         user_info = response.json()
-        await message.reply(text=f'{user_info}')
-        await message.reply(text=f'Если вы знаете ключевое слово, введите его. Иначе, напишите No')
+        await message.answer(text=f'{user_info}')
+        await message.answer(text=f'Если вы знаете ключевое слово, введите его. Иначе, напишите No')
         await ProfileStatesGroup.next()
     else:
-        await message.reply(text='Неверный код')
+        await message.answer(text='Неверный код')
 
 
 @dp.message_handler(lambda message: message.text, state=ProfileStatesGroup.keyword)
 async def check_owner(message: types.Message, state: FSMContext) -> None:
     global user
     if message.text == 'Director':
-        await bot.send_message(text='Вы теперь царь горы!')
+        await message.answer(text='Вы теперь царь горы!')
         # global owner
         # owner = user.change_for_owner()
         # add_info(owner.name, owner.surname, owner.company, owner.id, 'owner')
@@ -188,7 +185,7 @@ async def nine_to_ten_handler(callback: types.CallbackQuery):
 @dp.callback_query_handler(text='encrypted')
 async def encrypted_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
-    await bot.send_message(text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb())
+    await message.reply(text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb())
     global owner
 
 
@@ -198,7 +195,7 @@ async def encrypted_handler(callback: types.CallbackQuery):
 @dp.callback_query_handler(text='full_access')
 async def full_access_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
-    await bot.send_message(text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb())
+    await message.reply(text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb())
     global owner
 
 
@@ -252,20 +249,20 @@ async def own_choice_message_handler(message: types.Message, state: FSMContext):
 
 
 
-@dp.callback_query_handler(text='5')
-async def four_to_fif_handler(callback: types.CallbackQuery):
-    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
-    await callback.message.answer(text=f'Вы зарегистрировались на промежуток {times[5]}')
+# @dp.callback_query_handler(text='5')
+# async def four_to_fif_handler(callback: types.CallbackQuery):
+#     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
+#     await callback.message.answer(text=f'Вы зарегистрировались на промежуток {times[5]}')
 
-    global user
-    user.orders = give_user_number_orders(callback.from_user.id)
-    user.orders -= 1
-    change_number_orders(callback.from_user.id, user.orders)
+#     global user
+#     user.orders = give_user_number_orders(callback.from_user.id)
+#     user.orders -= 1
+#     change_number_orders(callback.from_user.id, user.orders)
     
-    washer_id = change_free_time_by_first(times[5], False)
-    await callback.message.answer(text = f'Номер вашей машинки - {washer_id}')
+#     washer_id = change_free_time_by_first(times[5], False)
+#     await callback.message.answer(text = f'Номер вашей машинки - {washer_id}')
 
-    await callback.answer()
+#     await callback.answer()
 
 
 if __name__ == '__main__':
