@@ -147,14 +147,17 @@ def get_accesses(customer_id: int):
   cur = conn.cursor()
 
   try:
-    query = "SELECT * FROM access WHERE customer_id = %s"
+    query = '''SELECT cu.name, cu.surname, cu.email, cu.telegram_id, ac.type, ac.end_time 
+              FROM "access" as ac 
+              JOIN customer as cu ON ac.allowed_customer_id = cu.customer_id 
+              WHERE ac.customer_id = 123123'''
 
     cur.execute(query, (customer_id, ))
 
     rows = cur.fetchall()
 
     if len(rows) > 0:
-      return [dict(zip(['access_id'] + ACCESS_COLS, rows[i])) for i in range(len(rows))]
+      return [dict(zip(['name', 'surname', 'email', 'telegram_id', 'type', 'end_time'], rows[i])) for i in range(len(rows))]
     else:
       return None
   except psycopg2.Error as e:
@@ -165,6 +168,8 @@ def get_accesses(customer_id: int):
     return None
 
 
+
+
 def get_director_id():
     dict = get_director()
     if dict is not None:
@@ -173,12 +178,18 @@ def get_director_id():
       return None
 
 def director_create():
-  Owner = Owner()
+  global owner
+  owner = Owner()
   dict = get_director()
   if dict is not None:
-    Owner.load_info(dict['name'], dict['surname'], dict['oauth_token'], dict['email'], dict['telegram_id'])
-    return Owner
+    owner.load_info(dict['name'], dict['surname'], dict['oauth_token'], dict['email'], dict['telegram_id'])
+    return owner
   else:
     return None
   
-get_accesses(2)
+def get_cust_by_tel(telegram_id: str):
+  dict = get_user_by_telegram(int(telegram_id))
+  if dict is not None:
+    return dict['customer_id']
+  else:
+    return None

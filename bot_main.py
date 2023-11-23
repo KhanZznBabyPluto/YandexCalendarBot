@@ -13,10 +13,6 @@ from bot_classes import User, Owner
 from bot_postgre import *
 from bot_keyboard import get_kb, get_owner_choice_kb, get_day_choice_kb, reactivate_kb
 
-user = User()
-
-flag = 0
-
 client_id = '68864fc64a7842c1948567f02d1bdf4c'
 client_secret = '9f10504cfd3d41e5a5650b277ddae6d7'
 redirect_uri = 'https://oauth.yandex.ru/verification_code'
@@ -122,22 +118,23 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
-        global user_info, user, flag
+        global user_info, user
         user.update_token(access_token)
         user_info = response.json()
+
+        if get_director_id() is not None:
+            flag = 1
+        else:
+            flag = 0
+
         if not flag:
             add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'director'])
             flag = 1
+            await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
         else:
             add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'user'])
-        await message.answer(text=f'{user_info}')
-        director_id = get_director_id()
-        if director_id is not None:
-            if message.from_user.id == director_id:
-                await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
-            else:
-                await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
-                await state.finish()
+            await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
+        await state.finish()
     else:
         await message.answer(text='Неверный код')
         await state.finish()
@@ -151,27 +148,33 @@ async def check_calendar(message: types.Message):
 
 @dp.message_handler(commands=['Check_Accesses'])
 async def check_access(message: types.Message):
-    
+    director_cust = get_cust_by_tel(message.from_user.id)
+    accesses_dict = get_accesses()
 
     pass
 
 
 @dp.message_handler(commands=['Ask_for_Access'])
-async def ask_for_access(message: types.Message):
-    global user
+async def ask_for_access(message: types.Message, state: FSMContext):
     global owner
+    await state.update_data(user_id=message.from_user.id)
     owner = director_create()
     if owner is not None:
         await message.answer(text=Text_for_Ask)
-        await bot.send_message(chat_id = owner.id, text=f'Вам пришёл запрос на доступ к вашему графику от {user.name} {user.surname} из {user.company}, {user.id}', reply_markup=get_owner_choice_kb())
+        user_id = (await state.get_data()).get("user_id")
+        await bot.send_message(chat_id=owner.id, text=f'Вам пришёл запрос на доступ к вашему графику от {user.name} {user.surname}, {user.email}, {user.id}', reply_markup=get_owner_choice_kb())
     else:
         await message.answer(text='Директора на данный момент в базе нет')
 
 
 @dp.callback_query_handler(text='no_access')
-async def nine_to_ten_handler(callback: types.CallbackQuery):
+async def nine_to_ten_handler(callback: types.CallbackQuery, state: FSMContext):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     global owner
+    user_data = await state.get_data()
+    user_id = user_data.get("user_id")
+    print('nice')
+    
 
 
     await callback.answer()
@@ -192,15 +195,18 @@ async def full_access_handler(callback: types.CallbackQuery):
     # await message.reply(text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb())
     global owner
 
-
     await callback.answer()
 
 
 
 @dp.callback_query_handler(text='one')
-async def one_day_handler(callback: types.CallbackQuery):
+async def one_day_handler(callback: types.CallbackQuery, user_id: str, type_access: str):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     
+    user_cust = get_cust_by_tel(user_id)
+    director_cust = get_cust_by_tel(callback.message.chat.id)
+    end_time = '18.10'
+    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_time])
 
     await callback.answer()
 
@@ -228,7 +234,7 @@ async def thirty_days_handler(callback: types.CallbackQuery):
 @dp.callback_query_handler(text='own_choice')
 async def own_choice_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
-    await bot.send_message(text='На сколько дней вы хотите дать доступ?')
+    await callback.reply(text='На сколько дней вы хотите дать доступ?')
 
     await callback.answer()
 
@@ -237,7 +243,7 @@ async def own_choice_handler(callback: types.CallbackQuery):
 
 @dp.message_handler(lambda message: not message.text.isdigit())
 async def own_choice_message_handler(message: types.Message, state: FSMContext):
-    await bot.send_message(text=f'Доступ предоставлен на {message.text} дня/дней', reply_markup= None)
+    await message.reply(text=f'Доступ предоставлен на {message.text} дня/дней', reply_markup= None)
     await state.finish()
 
 
@@ -258,6 +264,8 @@ async def own_choice_message_handler(message: types.Message, state: FSMContext):
 
 #     await callback.answer()
 
+
+# @dp.message_handler()
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)

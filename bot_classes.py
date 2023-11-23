@@ -9,8 +9,8 @@ class User():
     # def update_surname(self, surname):
     #     self.surname = surname
 
-    # def update_token(self, token):
-    #     self.token = token
+    def update_token(self, token):
+        self.token = token
 
     # def update_email(self, email):
     #     self.email = email
