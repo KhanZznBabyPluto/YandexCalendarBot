@@ -2,30 +2,31 @@ class User():
     def __init__(self):
         self.flag = 0
 
-    def update_name(self, name, id):
+    # def update_name(self, name, id):
+    #     self.name = name
+    #     self.id = id
+
+    # def update_surname(self, surname):
+    #     self.surname = surname
+
+    # def update_token(self, token):
+    #     self.token = token
+
+    # def update_email(self, email):
+    #     self.email = email
+
+    def update_all(self, name, surname, token, email, id):
         self.name = name
         self.id = id
-
-    def update_surname(self, surname):
         self.surname = surname
-
-    def update_token(self, token):
         self.token = token
-
-    def update_token(self, email):
         self.email = email
-
-    def update_all(self, name, surname, token, id):
-        self.name = name
-        self.id = id
-        self.surname = surname
-        self.token = token
 
 
     def change_for_owner(self):
         self.flag = 1
         owner = Owner()
-        owner.load_info(self.name, self.surname, self.token, self.id)
+        owner.load_info(self.name, self.surname, self.token, self.email, self.id)
         return owner
 
     def update_flag_access(self, flag):

@@ -10,7 +10,7 @@ from aiogram.types import ParseMode
 
 from bot_token import TOKEN_API
 from bot_classes import User, Owner
-from bot_mongo import *
+from bot_postgre import *
 from bot_keyboard import get_kb, get_owner_choice_kb, get_day_choice_kb, reactivate_kb
 
 user = User()
@@ -38,7 +38,7 @@ Action_for_start = """
     Дорбро пожаловать!\nЧтобы привязать ваш аккаунт, нажмите - <b>/Authorize</b>"""
 
 Action_for_owner = """
-    Давайте перейдём к планированию\nЧтобы просмотреть ваш календарь на сегодня, нажмите - <b>/Check_Calendar</b>\nЧтобы просмотреть у кого есть доступ к вашему календарю, нажмите - <b>/Check_Accesses</b>"""
+    Давайте перейдём к планированию. Вы - Директор.\nЧтобы просмотреть ваш календарь на сегодня, нажмите - <b>/Check_Calendar</b>\nЧтобы просмотреть у кого есть доступ к вашему календарю, нажмите - <b>/Check_Accesses</b>"""
 
 Action_for_user = """
     Давайте перейдём к календарю.\nЧтобы запросить доступ к календарю директора, нажмите - <b>/Ask_for_access</b>"""
@@ -80,7 +80,7 @@ async def cmd_create(message: types.Message) -> None:
     if check_telegram_id(user_id):
         await message.answer("Вы уже подключены, авторизовываться не надо")
         user_dict = get_user_by_telegram(user_id)
-        user.update_all(user_dict['name'], user_dict['surname'], user_dict['email'], user_id)
+        user.update_all(user_dict['name'], user_dict['surname'], user_dict['oauth_token'], user_dict['email'], user_id)
 
         if user_dict['role'] == 'director':
             global owner
@@ -146,7 +146,7 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 
 @dp.message_handler(commands=['Check_Calendar'])
 async def check_calendar(message: types.Message):
-    # await message.answer(f'Оставшееся количество стирок: {give_user_number_orders(message.from_user.id)}\n')  
+    await message.reply(text='This feauture is coming soon!')
     pass
 
 @dp.message_handler(commands=['Check_Accesses'])
