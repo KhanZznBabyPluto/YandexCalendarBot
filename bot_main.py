@@ -126,10 +126,10 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
         user.update_token(access_token)
         user_info = response.json()
         if not flag:
-            add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['name'], user_info['surname'], 'director'])
+            add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'director'])
             flag = 1
         else:
-            add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['name'], user_info['surname'], 'user'])
+            add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'user'])
         await message.answer(text=f'{user_info}')
         director_id = get_director_id()
         if director_id is not None:

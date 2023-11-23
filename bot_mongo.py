@@ -122,7 +122,7 @@ def check_telegram_id(telegram_id: int):
   try:
     query = "SELECT * FROM customer WHERE telegram_id = %s"
 
-    cur.execute(query, telegram_id)
+    cur.execute(query, (telegram_id, ))
 
     rows = cur.fetchall()
 
@@ -149,7 +149,7 @@ def get_accesses(customer_id: int):
   try:
     query = "SELECT * FROM access WHERE customer_id = %s"
 
-    cur.execute(query, customer_id)
+    cur.execute(query, (customer_id, ))
 
     rows = cur.fetchall()
 
