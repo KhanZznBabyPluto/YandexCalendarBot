@@ -165,6 +165,13 @@ def get_accesses(customer_id: int):
     return None
 
 
+def get_director_id():
+    dict = get_director()
+    if dict is not None:
+      return dict['telegram_id']
+    else:
+      return None
+
 def director_create():
   Owner = Owner()
   dict = get_director()

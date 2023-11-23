@@ -75,9 +75,10 @@ async def cmd_start(message: types.Message) -> None:
 async def cmd_create(message: types.Message) -> None:
     global user
     user = User()
-    if check_telegram_id(message.from_user.id):
+    user_id = int(message.from_user.id)
+
+    if check_telegram_id(user_id):
         await message.answer("Вы уже подключены, авторизовываться не надо")
-        user_id = message.from_user.id
         user_dict = get_user_by_telegram(user_id)
         user.update_all(user_dict['name'], user_dict['surname'], user_dict['email'], user_id)
 
@@ -101,7 +102,7 @@ async def code_error_handler(message: types.Message) -> None:
 
 
 @dp.message_handler(state=ProfileStatesGroup.code)
-async def code_handler(message: types.Message) -> None:
+async def code_handler(message: types.Message, state: FSMContext) -> None:
     await message.answer(text='Код обрабатывается')
     data = {
     'grant_type': 'authorization_code',
@@ -130,24 +131,16 @@ async def code_handler(message: types.Message) -> None:
         else:
             add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['name'], user_info['surname'], 'user'])
         await message.answer(text=f'{user_info}')
+        director_id = get_director_id()
+        if director_id is not None:
+            if message.from_user.id == director_id:
+                await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
+            else:
+                await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
+                await state.finish()
     else:
         await message.answer(text='Неверный код')
-
-
-# @dp.message_handler(lambda message: message.text, state=ProfileStatesGroup.keyword)
-# async def check_owner(message: types.Message, state: FSMContext) -> None:
-#     global user
-#     if message.text == 'director':
-#         await message.answer(text='Вы теперь царь горы!')
-#         global owner
-#         owner = user.change_for_owner()
-#         add_info('customer', CUSTOMER_COLS, )
-#         await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
-#     else:
-#         # add_info(user.name, user.surname, user.company, message.text, 'user')
-#         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
-
-#     await state.finish()
+        await state.finish()
 
 
 
@@ -158,7 +151,7 @@ async def check_calendar(message: types.Message):
 
 @dp.message_handler(commands=['Check_Accesses'])
 async def check_access(message: types.Message):
-    global user
+    
 
     pass
 
