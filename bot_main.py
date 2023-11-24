@@ -5,7 +5,6 @@ from aiogram.types import CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from aiogram.types import ParseMode
 
 from bot_token import TOKEN_API
 from bot_postgre import *
@@ -26,7 +25,6 @@ class UserStates(StatesGroup):
 
 class ProfileStatesGroup(StatesGroup):
     code = State()
-    send = State()
 
 
 
@@ -58,7 +56,17 @@ async def cmd_cancel(message: types.Message):
 @dp.message_handler(commands=['Reactivate_bot'], state=UserStates.INACTIVE)
 async def reactivate_bot(message: types.Message):
     await message.answer('Бот перезапущен')
-    await message.answer(text= Action_for_start, parse_mode = 'HTML', reply_markup=get_kb(0,0))
+    user_id = int(message.from_user.id)
+
+    if check_telegram_id(user_id):
+        user_dict = get_user_by_telegram(user_id)
+
+        if user_dict['role'] == 'director':
+            await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
+        else:
+            await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
+    else:
+        await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0, 0))
     await UserStates.ACTIVE.set()
 
 
@@ -101,7 +109,6 @@ async def cmd_create(message: types.Message) -> None:
 async def code_error_handler(message: types.Message) -> None:
     await message.answer(text='Неправильный формат ввода')
 
-
 @dp.message_handler(state=ProfileStatesGroup.code)
 async def code_handler(message: types.Message, state: FSMContext) -> None:
     await message.answer(text='Код обрабатывается')
@@ -125,15 +132,14 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
     if response.status_code == 200:
         user_info = response.json()
         if get_director_id() is not None:
-            flag = 1
+            flag = 'user'
         else:
-            flag = 0
+            flag = 'director'
 
-        if not flag:
-            add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'director'])
+        add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], flag])
+        if flag == 'director':
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
         else:
-            add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'user'])
             await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
         await state.finish()
     else:
@@ -171,24 +177,31 @@ async def check_calendar(message: types.Message):
     
     # print(all_events)
     # await message.answer('Вы успешно авторизовались!')
-    pass
 
 @dp.message_handler(commands=['Check_Accesses'])
 async def check_access(message: types.Message):
     director_cust = get_cust_by_tel(message.from_user.id)
     accesses_dict = get_accesses(director_cust)
     if accesses_dict is not None:
-        await message.reply(text=f'{accesses_dict}')
+        string = 'Вот список доступов:\n'
+        for access in accesses_dict:
+            name, surname, email, type_access, dt = access['name'], access['surname'], access['email'], access['type'], access['end_time']
+            date = dt.date()
+            if type_access == 'enc':
+                string += f'{name} {surname}, {email}. Неполный доступ до {date}\n'
+            else:
+                string += f'{name} {surname}, {email}. Полный доступ до {date}\n'
+        await message.answer(text=string)
     else:
-        await message.reply(text='Вы никому доступа не давали')
+        await message.answer(text='Вы никому доступа не давали')
 
 
 @dp.message_handler(commands=['Ask_for_Access'])
 async def ask_for_access(message: types.Message):
-    user_dict = get_user_by_telegram(message.from_user.id)
-    name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
     director_id = get_director_id()
     if director_id is not None:
+        user_dict = get_user_by_telegram(message.from_user.id)
+        name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
         await message.answer(text=Text_for_Ask)
         await bot.send_message(chat_id=director_id, text=f'Вам пришёл запрос на доступ к вашему графику от {name} {surname}, {email}', reply_markup=get_owner_choice_kb(message.from_user.id))
     else:
