@@ -185,8 +185,7 @@ async def check_access(message: types.Message):
     if accesses_dict is not None:
         string = 'Вот список доступов:\n'
         for access in accesses_dict:
-            name, surname, email, type_access, dt = access['name'], access['surname'], access['email'], access['type'], access['end_time']
-            date = dt.date()
+            name, surname, email, type_access, date = access['name'], access['surname'], access['email'], access['type'], access['end_time']
             if type_access == 'enc':
                 string += f'{name} {surname}, {email}. Неполный доступ до {date}\n'
             else:
@@ -239,10 +238,11 @@ async def one_day_handler(callback: types.CallbackQuery):
     user_cust = get_cust_by_tel(user_id)
     director_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.now() + timedelta(days=int(days))
+    end_date = end_dt.date()
 
-    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_dt}')
-    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_dt}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
+    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
+    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('seven'))
@@ -253,10 +253,11 @@ async def seven_days_handler(callback: types.CallbackQuery):
     user_cust = get_cust_by_tel(user_id)
     director_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.now() + timedelta(days=int(days))
+    end_date = end_dt.date()
 
-    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_dt}')
-    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_dt}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
+    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
+    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('fourteen'))
@@ -267,10 +268,11 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
     user_cust = get_cust_by_tel(user_id)
     director_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.now() + timedelta(days=int(days))
+    end_date = end_dt.date()
 
-    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_dt}')
-    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_dt}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
+    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
+    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('thirty'))
@@ -280,11 +282,12 @@ async def thirty_days_handler(callback: types.CallbackQuery):
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
     director_cust = get_cust_by_tel(callback.message.chat.id)
-    end_dt = datetime.now() + timedelta(days=int(days))   
+    end_dt = datetime.now() + timedelta(days=int(days))
+    end_date = end_dt.date()   
 
-    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_dt}')
-    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_dt}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
+    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
+    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('own_choice'))
