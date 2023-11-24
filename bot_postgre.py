@@ -177,15 +177,15 @@ def get_director_id():
     else:
       return None
 
-def director_create():
-  global owner
-  owner = Owner()
-  dict = get_director()
-  if dict is not None:
-    owner.load_info(dict['name'], dict['surname'], dict['oauth_token'], dict['email'], dict['telegram_id'])
-    return owner
-  else:
-    return None
+# def director_create():
+#   global owner
+#   owner = Owner()
+#   dict = get_director()
+#   if dict is not None:
+#     owner.load_info(dict['name'], dict['surname'], dict['oauth_token'], dict['email'], dict['telegram_id'])
+#     return owner
+#   else:
+#     return None
   
 def get_cust_by_tel(telegram_id: str):
   dict = get_user_by_telegram(int(telegram_id))
