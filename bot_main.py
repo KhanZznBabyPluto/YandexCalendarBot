@@ -5,7 +5,6 @@ from aiogram.types import CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.types import ParseMode
 
 from bot_token import TOKEN_API
@@ -24,9 +23,11 @@ class UserStates(StatesGroup):
     ACTIVE = State()
     INACTIVE = State() 
 
+
 class ProfileStatesGroup(StatesGroup):
     code = State()
     send = State()
+
 
 
 Action_for_start = """
@@ -63,23 +64,28 @@ async def reactivate_bot(message: types.Message):
 
 @dp.message_handler(commands=['Start'])
 async def cmd_start(message: types.Message) -> None:
-    await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0, 0))
+    user_id = int(message.from_user.id)
+
+    if check_telegram_id(user_id):
+        user_dict = get_user_by_telegram(user_id)
+
+        if user_dict['role'] == 'director':
+            await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
+        else:
+            await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
+    else:
+        await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0, 0))
 
 
 @dp.message_handler(commands=['Authorize'])
 async def cmd_create(message: types.Message) -> None:
-    global user
-    # user = User()
     user_id = int(message.from_user.id)
 
     if check_telegram_id(user_id):
         await message.answer("Вы уже подключены, авторизовываться не надо")
         user_dict = get_user_by_telegram(user_id)
-        # user.update_all(user_dict['name'], user_dict['surname'], user_dict['oauth_token'], user_dict['email'], user_id)
 
         if user_dict['role'] == 'director':
-            # global owner
-            # owner = user.change_for_owner()
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
         else:
             await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
@@ -117,10 +123,7 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
-        global user_info
-        # user.update_token(access_token)
         user_info = response.json()
-
         if get_director_id() is not None:
             flag = 1
         else:
@@ -128,7 +131,6 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 
         if not flag:
             add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'director'])
-            flag = 1
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
         else:
             add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'user'])
@@ -143,15 +145,42 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 @dp.message_handler(commands=['Check_Calendar'])
 async def check_calendar(message: types.Message):
     await message.reply(text='This feauture is coming soon!')
+    # headers = {
+    #     'Authorization': f'OAuth {access_token}',
+    # }
+
+    # calendar_id = 'primary'
+    # all_events = []
+
+    # url = f'https://calendar.yandex.ru/api/v1/calendars/{calendar_id}/events'
+
+    # while url:
+    #     response = requests.get(url, headers=headers)
+    #     if response.status_code == 200:
+    #         events = response.json()
+    #         for event in events['items']:
+    #             event_data = {
+    #             'title': event.get('summary'),
+    #             'date': event.get('start').get('dateTime') if event.get('start').get('dateTime') else event.get('start').get('date')
+    #             }
+    #             all_events.append(event_data)
+    #             url = events.get('nextPage')
+    #     else:
+    #         print('Ошибка при запросе событий календаря:', response.text)
+    #         break
+    
+    # print(all_events)
+    # await message.answer('Вы успешно авторизовались!')
     pass
 
 @dp.message_handler(commands=['Check_Accesses'])
 async def check_access(message: types.Message):
     director_cust = get_cust_by_tel(message.from_user.id)
     accesses_dict = get_accesses(director_cust)
-
-
-    pass
+    if accesses_dict is not None:
+        await message.reply(text=f'{accesses_dict}')
+    else:
+        await message.reply(text='Вы никому доступа не давали')
 
 
 @dp.message_handler(commands=['Ask_for_Access'])
@@ -171,20 +200,20 @@ async def ask_for_access(message: types.Message):
 async def no_access_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     user_id = callback.data.split(":")[1]
+    await bot.send_message(chat_id=callback.message.chat.id, text='Вы не предоставили доступ')
     await bot.send_message(chat_id=user_id, text='Доступ не предоставлен')
 
 
 @dp.callback_query_handler(text_startswith='encrypted:')
 async def encrypted_handler(callback: types.CallbackQuery):
     user_id = callback.data.split(":")[1]
-    await bot.send_message(chat_id=callback.message.chat.id, text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb(user_id, 'encrypted'))
-
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb(user_id, 'enc'))
 
 
 @dp.callback_query_handler(text_startswith='full_access:')
 async def full_access_handler(callback: types.CallbackQuery):
     user_id = callback.data.split(":")[1]
-    await bot.send_message(chat_id=callback.message.chat.id, text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb(user_id, 'full_access'))
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb(user_id, 'full'))
 
 
 
@@ -198,10 +227,10 @@ async def one_day_handler(callback: types.CallbackQuery):
     director_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.now() + timedelta(days=int(days))
 
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_dt}')
+    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_dt}')
     add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
 
-    await ProfileStatesGroup.send.set(user_id, type_access, end_dt)
-    await callback.answer(text=f'Вы предоставили доступ до {end_dt}')
 
 @dp.callback_query_handler(lambda c: c.data.startswith('seven'))
 async def seven_days_handler(callback: types.CallbackQuery):
@@ -212,10 +241,10 @@ async def seven_days_handler(callback: types.CallbackQuery):
     director_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.now() + timedelta(days=int(days))
 
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_dt}')
+    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_dt}')
     add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
 
-    await ProfileStatesGroup.send.set(user_id, type_access, end_dt)
-    await callback.answer(text=f'Вы предоставили доступ до {end_dt}')
 
 @dp.callback_query_handler(lambda c: c.data.startswith('fourteen'))
 async def fourteen_days_handler(callback: types.CallbackQuery):
@@ -226,10 +255,10 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
     director_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.now() + timedelta(days=int(days))
 
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_dt}')
+    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_dt}')
     add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
 
-    await ProfileStatesGroup.send.set(user_id, type_access, end_dt)
-    await callback.answer(text=f'Вы предоставили доступ до {end_dt}')
 
 @dp.callback_query_handler(lambda c: c.data.startswith('thirty'))
 async def thirty_days_handler(callback: types.CallbackQuery):
@@ -240,10 +269,10 @@ async def thirty_days_handler(callback: types.CallbackQuery):
     director_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.now() + timedelta(days=int(days))   
 
+    await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_dt}')
+    await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_dt}')
     add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
 
-    await ProfileStatesGroup.send.set(user_id, type_access, end_dt)
-    await callback.answer(text=f'Вы предоставили доступ до {end_dt}')
 
 @dp.callback_query_handler(lambda c: c.data.startswith('own_choice'))
 async def own_choice_handler(callback: types.CallbackQuery):
@@ -267,10 +296,10 @@ async def own_choice_handler(callback: types.CallbackQuery):
 #     await state.finish()
 
 
-@dp.message_handler(state=ProfileStatesGroup.send)
-async def access_handler(user_id, type_access, end_dt, state : FSMContext):
-    await bot.send_message(chat_id=user_id, text=f'Вам дан доступ {type_access} до {end_dt}')
-    await state.finish()
+# @dp.message_handler(state=ProfileStatesGroup.send)
+# async def access_handler(self, update, context, user_id, type_access, end_dt, state : FSMContext):
+#     await bot.send_message(chat_id=user_id, text=f'Вам дан доступ {type_access} до {end_dt}')
+#     await state.finish()
 
 
 

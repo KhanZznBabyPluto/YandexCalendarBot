@@ -146,17 +146,20 @@ def get_accesses(customer_id: int):
   cur = conn.cursor()
 
   try:
-    query = '''SELECT cu.name, cu.surname, cu.email, cu.telegram_id, ac.type, ac.end_time 
-              FROM "access" as ac 
-              JOIN customer as cu ON ac.allowed_customer_id = cu.customer_id 
-              WHERE ac.customer_id = 123123'''
+    query = '''
+      SELECT cu.name, cu.surname, cu.email, cu.telegram_id, ac.type, ac.end_time 
+      FROM "access" as ac 
+      JOIN customer as cu ON ac.allowed_customer_id = cu.customer_id 
+      WHERE ac.customer_id = %s
+    '''
 
-    cur.execute(query, (customer_id, ))
+    cur.execute(query, (customer_id,))
 
     rows = cur.fetchall()
 
     if len(rows) > 0:
-      return [dict(zip(['name', 'surname', 'email', 'telegram_id', 'type', 'end_time'], rows[i])) for i in range(len(rows))]
+      columns = ['name', 'surname', 'email', 'telegram_id', 'type', 'end_time']
+      return [dict(zip(columns, row)) for row in rows]
     else:
       return None
   except psycopg2.Error as e:
@@ -165,6 +168,7 @@ def get_accesses(customer_id: int):
   except Exception as ex:
     print("Ошибка:", ex)
     return None
+
 
 
 
