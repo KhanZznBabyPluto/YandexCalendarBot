@@ -1,5 +1,4 @@
 import psycopg2
-from bot_classes import *
 
 CUSTOMER_COLS = ['telegram_id', 'oauth_token', 'email', 'name', 'surname', 'role']
 ACCESS_COLS = ['customer_id', 'allowed_customer_id', 'type', 'end_time']
@@ -176,16 +175,6 @@ def get_director_id():
       return dict['telegram_id']
     else:
       return None
-
-# def director_create():
-#   global owner
-#   owner = Owner()
-#   dict = get_director()
-#   if dict is not None:
-#     owner.load_info(dict['name'], dict['surname'], dict['oauth_token'], dict['email'], dict['telegram_id'])
-#     return owner
-#   else:
-#     return None
   
 def get_cust_by_tel(telegram_id: str):
   dict = get_user_by_telegram(int(telegram_id))

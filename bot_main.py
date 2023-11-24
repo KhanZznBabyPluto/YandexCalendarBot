@@ -9,7 +9,6 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.types import ParseMode
 
 from bot_token import TOKEN_API
-from bot_classes import User, Owner
 from bot_postgre import *
 from bot_keyboard import *
 
