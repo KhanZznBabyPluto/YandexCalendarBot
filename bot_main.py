@@ -157,7 +157,7 @@ async def check_calendar(message: types.Message, state: FSMContext):
         await ProfileStatesGroup.code_2.set()
     else:
         info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
-        if len(info_dict):
+        if len(info_dict) != 0:
             string = ''
             i = 1
             for event in info_dict:
@@ -179,12 +179,9 @@ async def check_calendar(message: types.Message, state: FSMContext):
 @dp.message_handler(state=ProfileStatesGroup.code_2)
 async def login_handler(message: types.Message, state: FSMContext):
     user_cust = get_cust_by_tel(message.from_user.id)
-    user_dict = get_user_by_telegram(message.from_user.id)
     add_password(user_cust, message.text)
     await message.answer(text='Пароль добавлен, теперь нажмите <b>/Check_Calendar</b> ещё раз', parse_mode='HTML')
     await state.finish()
-
-
 
 
 @dp.message_handler(commands=['Check_Accesses'])
@@ -204,22 +201,93 @@ async def check_access(message: types.Message):
         await message.answer(text='Вы никому доступа не давали')
 
 
+
 @dp.message_handler(commands=['Ask_for_Access'])
 async def ask_for_access(message: types.Message):
     director_id = get_director_id()
     if director_id is not None:
         user_dict = get_user_by_telegram(message.from_user.id)
-        name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
-        await message.answer(text=Text_for_Ask)
-        await bot.send_message(chat_id=director_id, text=f'Вам пришёл запрос на доступ к вашему графику от {name} {surname}, {email}', reply_markup=get_owner_choice_kb(message.from_user.id))
+        user_cust = user_dict['customer_id']
+        director_cust = get_cust_by_tel(director_id)
+        accesses_dict = get_accesses(director_cust)
+        flag = 0
+        if accesses_dict is not None:
+            for access in accesses_dict:
+                if user_cust == access['allowed_customer_id']:
+                    flag = 1
+                    break
+            if flag:
+                await message.answer(text='У вас уже есть доступ')
+            else:
+                user_dict = get_user_by_telegram(message.from_user.id)
+                name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
+                await message.answer(text=Text_for_Ask)
+                await bot.send_message(chat_id=director_id, text=f'Вам пришёл запрос на доступ к вашему графику от {name} {surname}, {email}', reply_markup=get_owner_choice_kb(message.from_user.id))
+        elif accesses_dict is None:
+            user_dict = get_user_by_telegram(message.from_user.id)
+            name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
+            await message.answer(text=Text_for_Ask)
+            await bot.send_message(chat_id=director_id, text=f'Вам пришёл запрос на доступ к вашему графику от {name} {surname}, {email}', reply_markup=get_owner_choice_kb(message.from_user.id))
     else:
         await message.answer(text='Директора на данный момент в базе нет')
 
+
+
+
 @dp.message_handler(commands='Get_Calendar_Director')
 async def director_calendar(message: types.Message):
-    director_id = get_director_id()
+    director_dict = get_director()
+    director_id = director_dict['telegram_id']
     if director_id is not None:
-        
+        if director_dict['password'] is None:
+            await message.answer(text='Директор ещё не зарегестрировался в календаре')
+        else:
+            user_dict = get_user_by_telegram(message.from_user.id)
+            user_cust = user_dict['customer_id']
+            director_cust = get_cust_by_tel(director_id)
+            accesses_dict = get_accesses(director_cust)
+            type = ''
+            for access in accesses_dict:
+                if user_cust == access['allowed_customer_id']:
+                    type = access['type']
+                    flag = 1
+                    break
+            if flag:
+                info_dict = get_event_info(director_dict['email'], director_dict['login'], director_dict['password'])
+                if type == 'enc':
+                    if len(info_dict) != 0:
+                        string = ''
+                        i = 1
+                        for event in info_dict:
+                            start = event['start']
+                            start = arrow.get(start).time()
+                            end = event['end']
+                            end = arrow.get(end).time()
+                            string += f'{i}: С {start} до {end}\n'
+                            i += 1
+                        await message.answer(text=string)
+                    else:
+                        await message.answer(text='У Директора запланированных дел нет')
+                else:
+                    if len(info_dict) != 0:
+                        string = ''
+                        i = 1
+                        for event in info_dict:
+                            name = event['event']
+                            name = name.encode('latin-1').decode('utf-8')
+                            start = event['start']
+                            start = arrow.get(start).time()
+                            end = event['end']
+                            end = arrow.get(end).time()
+                            string += f'{i}: {name} с {start} до {end}\n'
+                            i += 1
+                        await message.answer(text=string)
+                    else:
+                        await message.answer(text='У Директора запланированных дел нет')
+            else:
+                await message.answer(text='У вас нет доступа')
+
+
 
 
 @dp.callback_query_handler(text_startswith='no_access:')
