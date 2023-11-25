@@ -12,6 +12,7 @@ def get_kb(flag, flag_access) -> ReplyKeyboardMarkup:
         if flag_access:
             kb.add(KeyboardButton('/Check_Accesses'))
         else:
+            kb.add(KeyboardButton('/Get_Calendar_Director'))
             kb.add(KeyboardButton('/Ask_for_Access'))
     kb.add(KeyboardButton('/Cancel'))
     

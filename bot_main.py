@@ -215,6 +215,11 @@ async def ask_for_access(message: types.Message):
     else:
         await message.answer(text='Директора на данный момент в базе нет')
 
+@dp.message_handler(commands='Get_Calendar_Director')
+async def director_calendar(message: types.Message):
+    director_id = get_director_id()
+    if director_id is not None:
+        
 
 
 @dp.callback_query_handler(text_startswith='no_access:')
