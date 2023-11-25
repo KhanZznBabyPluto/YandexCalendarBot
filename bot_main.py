@@ -1,6 +1,6 @@
 import requests
 import asyncio
-from datetime import datetime, timedelta
+import datetime
 from aiogram import types, executor, Bot, Dispatcher
 from aiogram.types import CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -61,7 +61,7 @@ async def reactivate_bot(message: types.Message):
     await message.answer('Бот перезапущен')
     user_id = int(message.from_user.id)
     if check_telegram_id(user_id):
-        user_dict = await get_user_by_telegram(user_id)
+        user_dict = get_user_by_telegram(user_id)
 
         if user_dict['role'] == 'director':
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
@@ -76,7 +76,7 @@ async def reactivate_bot(message: types.Message):
 async def cmd_start(message: types.Message) -> None:
     user_id = int(message.from_user.id)
     if check_telegram_id(user_id):
-        user_dict = await get_user_by_telegram(user_id)
+        user_dict = get_user_by_telegram(user_id)
 
         if user_dict['role'] == 'director':
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
@@ -91,7 +91,7 @@ async def cmd_create(message: types.Message) -> None:
     user_id = int(message.from_user.id)
     if check_telegram_id(user_id):
         await message.answer("Вы уже подключены, авторизовываться не надо")
-        user_dict = await get_user_by_telegram(user_id)
+        user_dict = get_user_by_telegram(user_id)
 
         if user_dict['role'] == 'director':
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
@@ -185,7 +185,7 @@ async def check_access(message: types.Message):
 async def ask_for_access(message: types.Message):
     director_id = get_director_id()
     if director_id is not None:
-        user_dict = await get_user_by_telegram(message.from_user.id)
+        user_dict = get_user_by_telegram(message.from_user.id)
         name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
         await message.answer(text=Text_for_Ask)
         await bot.send_message(chat_id=director_id, text=f'Вам пришёл запрос на доступ к вашему графику от {name} {surname}, {email}', reply_markup=get_owner_choice_kb(message.from_user.id))
@@ -204,12 +204,14 @@ async def no_access_handler(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text_startswith='encrypted:')
 async def encrypted_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     user_id = callback.data.split(":")[1]
     await bot.send_message(chat_id=callback.message.chat.id, text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb(user_id, 'enc'))
 
 
 @dp.callback_query_handler(text_startswith='full_access:')
 async def full_access_handler(callback: types.CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     user_id = callback.data.split(":")[1]
     await bot.send_message(chat_id=callback.message.chat.id, text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb(user_id, 'full'))
 
@@ -223,12 +225,12 @@ async def one_day_handler(callback: types.CallbackQuery):
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
     director_cust = get_cust_by_tel(callback.message.chat.id)
-    end_dt = datetime.now() + timedelta(days=int(days))
+    end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    await add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
+    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('seven'))
@@ -238,7 +240,7 @@ async def seven_days_handler(callback: types.CallbackQuery):
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
     director_cust = get_cust_by_tel(callback.message.chat.id)
-    end_dt = datetime.now() + timedelta(days=int(days))
+    end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
@@ -253,7 +255,7 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
     director_cust = get_cust_by_tel(callback.message.chat.id)
-    end_dt = datetime.now() + timedelta(days=int(days))
+    end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
@@ -268,7 +270,7 @@ async def thirty_days_handler(callback: types.CallbackQuery):
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
     director_cust = get_cust_by_tel(callback.message.chat.id)
-    end_dt = datetime.now() + timedelta(days=int(days))
+    end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()   
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
