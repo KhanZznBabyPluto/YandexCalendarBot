@@ -35,7 +35,7 @@ Action_for_owner = """
     Давайте перейдём к планированию. Вы - Директор.\nЧтобы просмотреть ваш календарь на сегодня, нажмите - <b>/Check_Calendar</b>\nЧтобы просмотреть у кого есть доступ к вашему календарю, нажмите - <b>/Check_Accesses</b>"""
 
 Action_for_user = """
-    Давайте перейдём к календарю.\nЧтобы запросить доступ к календарю директора, нажмите - <b>/Ask_for_access</b>"""
+    Давайте перейдём к календарю.\nЧтобы запросить доступ к календарю директора, нажмите \n<b>/Ask_for_access</b>"""
 
 Action_for_non_auth = """
     Вы не авторизованы, поэтому я не могу запросить доступ к каледнарю.\nПожалуйста авторизуйтесь - <b>/Authorize</b> или остановите бота - <b>/Cancel</b>"""
@@ -181,25 +181,8 @@ async def login_handler(message: types.Message, state: FSMContext):
     user_cust = get_cust_by_tel(message.from_user.id)
     user_dict = get_user_by_telegram(message.from_user.id)
     add_password(user_cust, message.text)
-    info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
-    if len(info_dict):
-        string = ''
-        i = 1
-        for event in info_dict:
-            name = event['event']
-            name = name.encode('latin-1').decode('utf-8')
-            start = event['start']
-            start = arrow.get(start).time()
-            end = event['end']
-            end = arrow.get(end).time()
-            string += f'{i}: {name} с {start} до {end}\n'
-            i += 1
-        await message.answer(text=string)
-        await state.finish()
-    else:
-        await message.answer(text='Запланированных дел нет')
-        await state.finish()
-
+    await message.answer(text='Пароль добавлен, теперь нажмите <b>/Check_Calendar</b> ещё раз', parse_mode='HTML')
+    await state.finish()
 
 
 
