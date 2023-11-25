@@ -1,4 +1,5 @@
 import requests
+import asyncio
 from datetime import datetime, timedelta
 from aiogram import types, executor, Bot, Dispatcher
 from aiogram.types import CallbackQuery
@@ -6,9 +7,9 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
-from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
 from bot_postgre import *
-from bot_keyboard import *
+from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
+from bot_keyboard import url, url_pass, reactivate_kb, get_kb, get_owner_choice_kb, get_day_choice_kb
 
 storage = MemoryStorage()
 bot = Bot(TOKEN_API)
@@ -22,6 +23,7 @@ class UserStates(StatesGroup):
 
 class ProfileStatesGroup(StatesGroup):
     code = State()
+    code_2 = State()
 
 
 
@@ -44,6 +46,10 @@ Text_for_Ask = """
     Вы отправили запрос на доступ\nОжидайте ответ от Директора"""
 
 
+async def on_startup(dp):
+    print('Bot has been started')
+
+
 @dp.message_handler(commands=['Cancel'])
 async def cmd_cancel(message: types.Message):
     await message.reply(text=Action_for_reset, parse_mode='HTML', reply_markup= reactivate_kb)
@@ -54,9 +60,8 @@ async def cmd_cancel(message: types.Message):
 async def reactivate_bot(message: types.Message):
     await message.answer('Бот перезапущен')
     user_id = int(message.from_user.id)
-
     if check_telegram_id(user_id):
-        user_dict = get_user_by_telegram(user_id)
+        user_dict = await get_user_by_telegram(user_id)
 
         if user_dict['role'] == 'director':
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
@@ -70,9 +75,8 @@ async def reactivate_bot(message: types.Message):
 @dp.message_handler(commands=['Start'])
 async def cmd_start(message: types.Message) -> None:
     user_id = int(message.from_user.id)
-
     if check_telegram_id(user_id):
-        user_dict = get_user_by_telegram(user_id)
+        user_dict = await get_user_by_telegram(user_id)
 
         if user_dict['role'] == 'director':
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
@@ -85,10 +89,9 @@ async def cmd_start(message: types.Message) -> None:
 @dp.message_handler(commands=['Authorize'])
 async def cmd_create(message: types.Message) -> None:
     user_id = int(message.from_user.id)
-
     if check_telegram_id(user_id):
         await message.answer("Вы уже подключены, авторизовываться не надо")
-        user_dict = get_user_by_telegram(user_id)
+        user_dict = await get_user_by_telegram(user_id)
 
         if user_dict['role'] == 'director':
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
@@ -146,33 +149,20 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 
 @dp.message_handler(commands=['Check_Calendar'])
 async def check_calendar(message: types.Message):
-    await message.reply(text='This feauture is coming soon!')
-    # headers = {
-    #     'Authorization': f'OAuth {access_token}',
-    # }
+    await message.answer(text='Для того, чтобы получить календарь, вышлите пожалуйста пароль, который вы получите по ссылке', reply_markup=url_pass)
+    await message.answer(text=f'Далее отправьте мне код для подтверждения')
+    await ProfileStatesGroup.code_2.set()
 
-    # calendar_id = 'primary'
-    # all_events = []
 
-    # url = f'https://calendar.yandex.ru/api/v1/calendars/{calendar_id}/events'
+@dp.message_handler(state=ProfileStatesGroup.code_2)
+async def login_handler(message: types.Message):
+    user_cust = get_cust_by_tel(message.from_user.id)
+    add_password(user_cust, message.text)
+    user_dict = get_user_by_telegram(message.from_user.id)
+    get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
 
-    # while url:
-    #     response = requests.get(url, headers=headers)
-    #     if response.status_code == 200:
-    #         events = response.json()
-    #         for event in events['items']:
-    #             event_data = {
-    #             'title': event.get('summary'),
-    #             'date': event.get('start').get('dateTime') if event.get('start').get('dateTime') else event.get('start').get('date')
-    #             }
-    #             all_events.append(event_data)
-    #             url = events.get('nextPage')
-    #     else:
-    #         print('Ошибка при запросе событий календаря:', response.text)
-    #         break
-    
-    # print(all_events)
-    # await message.answer('Вы успешно авторизовались!')
+
+
 
 @dp.message_handler(commands=['Check_Accesses'])
 async def check_access(message: types.Message):
@@ -195,7 +185,7 @@ async def check_access(message: types.Message):
 async def ask_for_access(message: types.Message):
     director_id = get_director_id()
     if director_id is not None:
-        user_dict = get_user_by_telegram(message.from_user.id)
+        user_dict = await get_user_by_telegram(message.from_user.id)
         name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
         await message.answer(text=Text_for_Ask)
         await bot.send_message(chat_id=director_id, text=f'Вам пришёл запрос на доступ к вашему графику от {name} {surname}, {email}', reply_markup=get_owner_choice_kb(message.from_user.id))
@@ -238,7 +228,7 @@ async def one_day_handler(callback: types.CallbackQuery):
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
+    await add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('seven'))
@@ -316,4 +306,6 @@ async def own_choice_handler(callback: types.CallbackQuery):
 
 
 if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(on_startup(dp))
     executor.start_polling(dp, skip_updates=True)
