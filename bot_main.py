@@ -164,9 +164,9 @@ async def check_calendar(message: types.Message, state: FSMContext):
                 name = event['event']
                 name = name.encode('latin-1').decode('utf-8')
                 start = event['start']
-                start = arrow.get(start).time()
+                start = arrow.get(start).format("HH:mm")
                 end = event['end']
-                end = arrow.get(end).time()
+                end = arrow.get(end).format("HH:mm")
                 string += f'{i}: {name} с {start} до {end}\n'
                 i += 1
             await message.answer(text=string)
@@ -218,12 +218,7 @@ async def ask_for_access(message: types.Message):
                     break
             if flag:
                 await message.answer(text='У вас уже есть доступ')
-            else:
-                user_dict = get_user_by_telegram(message.from_user.id)
-                name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
-                await message.answer(text=Text_for_Ask)
-                await bot.send_message(chat_id=director_id, text=f'Вам пришёл запрос на доступ к вашему графику от {name} {surname}, {email}', reply_markup=get_owner_choice_kb(message.from_user.id))
-        elif accesses_dict is None:
+        if accesses_dict is None and flag == 0:
             user_dict = get_user_by_telegram(message.from_user.id)
             name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
             await message.answer(text=Text_for_Ask)
@@ -260,9 +255,9 @@ async def director_calendar(message: types.Message):
                         i = 1
                         for event in info_dict:
                             start = event['start']
-                            start = arrow.get(start).time()
+                            start = arrow.get(start).format("HH:mm")
                             end = event['end']
-                            end = arrow.get(end).time()
+                            end = arrow.get(end).format("HH:mm")
                             string += f'{i}: С {start} до {end}\n'
                             i += 1
                         await message.answer(text=string)
