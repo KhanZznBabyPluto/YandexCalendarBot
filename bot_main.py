@@ -1,7 +1,7 @@
+import arrow
 import requests
 import asyncio
 import datetime
-import arrow
 from aiogram import types, executor, Bot, Dispatcher
 from aiogram.types import CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
