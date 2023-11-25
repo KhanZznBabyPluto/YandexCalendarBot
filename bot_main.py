@@ -1,6 +1,7 @@
 import requests
 import asyncio
 import datetime
+import arrow
 from aiogram import types, executor, Bot, Dispatcher
 from aiogram.types import CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -157,11 +158,23 @@ async def check_calendar(message: types.Message, state: FSMContext):
     else:
         info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
         if len(info_dict):
-            await message.answer(text=f'{info_dict}')
+            string = ''
+            i = 1
+            for event in info_dict:
+                name = event['event']
+                name = name.encode('latin-1').decode('utf-8')
+                start = event['start']
+                start = arrow.get(start).time()
+                end = event['end']
+                end = arrow.get(end).time()
+                string += f'{i}: {name} с {start} до {end}\n'
+                i += 1
+            await message.answer(text=string)
             await state.finish()
         else:
             await message.answer(text='Запланированных дел нет')
             await state.finish()
+
 
 @dp.message_handler(state=ProfileStatesGroup.code_2)
 async def login_handler(message: types.Message, state: FSMContext):
@@ -170,7 +183,18 @@ async def login_handler(message: types.Message, state: FSMContext):
     add_password(user_cust, message.text)
     info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
     if len(info_dict):
-        await message.answer(text=f'{info_dict}')
+        string = ''
+        i = 1
+        for event in info_dict:
+            name = event['event']
+            name = name.encode('latin-1').decode('utf-8')
+            start = event['start']
+            start = arrow.get(start).time()
+            end = event['end']
+            end = arrow.get(end).time()
+            string += f'{i}: {name} с {start} до {end}\n'
+            i += 1
+        await message.answer(text=string)
         await state.finish()
     else:
         await message.answer(text='Запланированных дел нет')
