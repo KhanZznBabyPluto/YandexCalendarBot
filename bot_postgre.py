@@ -210,16 +210,6 @@ def get_event_info(email: str, username: str, password: str):
       print(response.status_code)
   return res
 
-#example:
-# email = 'imsobaka01@yandex.kz'
-# username = 'imsobaka01'
-# password = 'qwskexkijcawqtie' # - он заправшивается у пользователя. Сделать его нужно в настройках яндекс аккаунта -> сделать пароль приложения и отправить в чат
-# print(get_event_info(email, username, password))
-
-
-# https://id.yandex.ru/security/app-passwords
-
-
 
 
 
