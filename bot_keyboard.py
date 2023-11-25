@@ -2,6 +2,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.dispatcher.filters import Text
 from bot_postgre import *
+from bot_token import client_secret, client_id, redirect_uri
 
 def get_kb(flag, flag_access) -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -36,6 +37,13 @@ def get_day_choice_kb(user_id, type_access) -> InlineKeyboardButton:
     kb.add(button_1, button_2, button_3, button_4, button_5)
 
     return kb
+
+
+url = InlineKeyboardMarkup()
+auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
+url_button = InlineKeyboardButton(text="Перейти по ссылке", url=auth_url)
+url.add(url_button)
+
 
 
 reactivate_kb = ReplyKeyboardMarkup(resize_keyboard=True)

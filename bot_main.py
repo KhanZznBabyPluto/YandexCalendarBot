@@ -6,13 +6,10 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
-from bot_token import TOKEN_API
+from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
 from bot_postgre import *
 from bot_keyboard import *
 
-client_id = '68864fc64a7842c1948567f02d1bdf4c'
-client_secret = '9f10504cfd3d41e5a5650b277ddae6d7'
-redirect_uri = 'https://oauth.yandex.ru/verification_code'
 storage = MemoryStorage()
 bot = Bot(TOKEN_API)
 dp = Dispatcher(bot, storage=storage)
@@ -99,8 +96,7 @@ async def cmd_create(message: types.Message) -> None:
             await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
 
     else:
-        auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
-        await message.answer(text=f'Давайте привяжем вас к вашему аккаунту.\nДля этого авторизуйтесь по ссылке:\n{auth_url}')
+        await message.answer(text=f'Давайте привяжем вас к вашему аккаунту.\nДля этого авторизуйтесь:', reply_markup=url)
         await message.answer(text=f'Далее отправьте мне код для подтверждения') 
         await ProfileStatesGroup.code.set()
 

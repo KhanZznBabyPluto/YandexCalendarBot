@@ -1,14 +1,6 @@
 import psycopg2
-
-CUSTOMER_COLS = ['telegram_id', 'oauth_token', 'email', 'name', 'surname', 'role']
-ACCESS_COLS = ['customer_id', 'allowed_customer_id', 'type', 'end_time']
-
-# Параметры подключения к базе данных
-_dbname = 'calendar-bot'
-_user = 'test'
-_password = 'test'
-_host = '213.139.209.8'
-_port = '5432'
+from bot_token import *
+from bot_token import _dbname, _user, _password, _host, _port
 
 def get_user_by_telegram(telegram_id: int):
   conn = psycopg2.connect(
