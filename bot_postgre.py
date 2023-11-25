@@ -29,11 +29,10 @@ def get_user_by_telegram(telegram_id: int):
     conn.close()
 
     if len(rows) > 0:
-      res = dict(zip(['customer_id'] + CUSTOMER_COLS, rows[0]))
+      res = dict(zip(['customer_id'] + CUSTOMER_COLS + ['password'], rows[0]))
       return res
     else:
       return None
-
 
   except psycopg2.Error as e:
     print("Ошибка PostgreSQL:", e)
@@ -94,7 +93,7 @@ def get_director():
     conn.close()
 
     if len(rows) > 0:
-      return dict(zip(['customer_id'] + CUSTOMER_COLS, rows[0]))
+      return dict(zip(['customer_id'] + CUSTOMER_COLS + ['password'], rows[0]))
     else:
       return None
 
@@ -167,9 +166,32 @@ def get_accesses(customer_id: int):
   except Exception as ex:
     print("Ошибка:", ex)
     return None
+  
 
-def add_password(customer_id: int, password: str):
-  pass
+def print_customer():
+  conn = psycopg2.connect(
+    dbname=_dbname,
+    user=_user,
+    password=_password,
+    host=_host,
+    port=_port
+  )
+
+  cur = conn.cursor()
+
+  try:
+    query = "SELECT * FROM customer"
+
+    cur.execute(query)
+
+    rows = cur.fetchall()
+
+    for row in rows:
+      print(row)
+
+  except psycopg2.Error as e:
+    print("Ошибка PostgreSQL:", e)
+    return
 
 
 def get_event_info(email: str, username: str, password: str):
@@ -212,7 +234,6 @@ def get_event_info(email: str, username: str, password: str):
 
 
 
-
 def get_director_id():
     dict = get_director()
     if dict is not None:
@@ -225,4 +246,30 @@ def get_cust_by_tel(telegram_id: str):
   if dict is not None:
     return dict['customer_id']
   else:
+    return None
+
+
+def add_password(customer_id: int, password: str):
+  conn = psycopg2.connect(
+    dbname=_dbname,
+    user=_user,
+    password=_password,
+    host=_host,
+    port=_port
+  )
+
+  cur = conn.cursor()
+
+  try:
+    query = "UPDATE customer SET password = %s WHERE customer_id = %s"
+
+    cur.execute(query, (password, customer_id))
+
+    conn.commit()
+      
+  except psycopg2.Error as e:
+    print("Ошибка PostgreSQL:", e)
+    return None
+  except Exception as ex:
+    print("Ошибка:", ex)
     return None

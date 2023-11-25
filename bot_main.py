@@ -135,7 +135,7 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
         else:
             flag = 'director'
 
-        add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], flag])
+        add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], flag, user_info['login']])
         if flag == 'director':
             await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
         else:
@@ -148,18 +148,34 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 
 
 @dp.message_handler(commands=['Check_Calendar'])
-async def check_calendar(message: types.Message):
-    await message.answer(text='Для того, чтобы получить календарь, вышлите пожалуйста пароль, который вы получите по ссылке', reply_markup=url_pass)
-    await message.answer(text=f'Далее отправьте мне код для подтверждения')
-    await ProfileStatesGroup.code_2.set()
-
+async def check_calendar(message: types.Message, state: FSMContext):
+    user_dict = get_user_by_telegram(message.from_user.id)
+    if user_dict['password'] is None:
+        await message.answer(text='Для того, чтобы получить календарь, перейдите по ссылке, установите пароль на календарь:', reply_markup=url_pass)
+        await message.answer(text=f'Далее отправьте мне код для подтверждения')
+        await ProfileStatesGroup.code_2.set()
+    else:
+        info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
+        if len(info_dict):
+            await message.answer(text=f'{info_dict}')
+            await state.finish()
+        else:
+            await message.answer(text='Запланированных дел нет')
+            await state.finish()
 
 @dp.message_handler(state=ProfileStatesGroup.code_2)
-async def login_handler(message: types.Message):
+async def login_handler(message: types.Message, state: FSMContext):
     user_cust = get_cust_by_tel(message.from_user.id)
-    add_password(user_cust, message.text)
     user_dict = get_user_by_telegram(message.from_user.id)
-    get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
+    add_password(user_cust, message.text)
+    info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
+    if len(info_dict):
+        await message.answer(text=f'{info_dict}')
+        await state.finish()
+    else:
+        await message.answer(text='Запланированных дел нет')
+        await state.finish()
+
 
 
 
