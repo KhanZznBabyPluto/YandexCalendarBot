@@ -395,7 +395,7 @@ async def thirty_days_handler(callback: types.CallbackQuery):
 @dp.callback_query_handler(lambda c: c.data.startswith('own_choice'))
 async def own_choice_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
-    await callback.reply(text='На сколько дней вы хотите дать доступ? Введите количество дней.')
+    # await callback.reply(text='На сколько дней вы хотите дать доступ? Введите количество дней.')
     await callback.reply(text='This feature is coming soon!')
 
 
