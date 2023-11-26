@@ -218,7 +218,7 @@ async def ask_for_access(message: types.Message):
                     break
             if flag:
                 await message.answer(text='У вас уже есть доступ')
-        if accesses_dict is None and flag == 0:
+        if accesses_dict is None or flag == 0:
             user_dict = get_user_by_telegram(message.from_user.id)
             name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
             await message.answer(text=Text_for_Ask)
@@ -249,36 +249,59 @@ async def director_calendar(message: types.Message):
                     break
             if flag:
                 info_dict = get_event_info(director_dict['email'], director_dict['login'], director_dict['password'])
-                if type == 'enc':
-                    if len(info_dict) != 0:
-                        string = ''
-                        i = 1
-                        for event in info_dict:
+                # if type == 'enc':
+                #     if len(info_dict) != 0:
+                #         string = ''
+                #         i = 1
+                #         for event in info_dict:
+                #             start = event['start']
+                #             start = arrow.get(start).format("HH:mm")
+                #             end = event['end']
+                #             end = arrow.get(end).format("HH:mm")
+                #             string += f'{i}: С {start} до {end}\n'
+                #             i += 1
+                #         await message.answer(text=string)
+                #     else:
+                #         await message.answer(text='У Директора запланированных дел нет')
+                # else:
+                #     if len(info_dict) != 0:
+                #         string = ''
+                #         i = 1
+                #         for event in info_dict:
+                #             name = event['event']
+                #             name = name.encode('latin-1').decode('utf-8')
+                #             start = event['start']
+                #             start = arrow.get(start).time()
+                #             end = event['end']
+                #             end = arrow.get(end).time()
+                #             string += f'{i}: {name} с {start} до {end}\n'
+                #             i += 1
+                #         await message.answer(text=string)
+                #     else:
+                #         await message.answer(text='У Директора запланированных дел нет')
+                if len(info_dict) != 0:
+                    string = ''
+                    i = 1
+                    for event in info_dict:
+                        if type == 'enc':
                             start = event['start']
                             start = arrow.get(start).format("HH:mm")
                             end = event['end']
                             end = arrow.get(end).format("HH:mm")
                             string += f'{i}: С {start} до {end}\n'
                             i += 1
-                        await message.answer(text=string)
-                    else:
-                        await message.answer(text='У Директора запланированных дел нет')
-                else:
-                    if len(info_dict) != 0:
-                        string = ''
-                        i = 1
-                        for event in info_dict:
+                        else:
                             name = event['event']
                             name = name.encode('latin-1').decode('utf-8')
                             start = event['start']
-                            start = arrow.get(start).time()
+                            start = arrow.get(start).format("HH:mm")
                             end = event['end']
-                            end = arrow.get(end).time()
+                            end = arrow.get(end).format("HH:mm")
                             string += f'{i}: {name} с {start} до {end}\n'
                             i += 1
-                        await message.answer(text=string)
-                    else:
-                        await message.answer(text='У Директора запланированных дел нет')
+                    await message.answer(text=string)
+                else:
+                    await message.answer(text='У директора запланированных дел нет')
             else:
                 await message.answer(text='У вас нет доступа')
 
