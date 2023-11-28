@@ -275,7 +275,19 @@ def add_password(customer_id: int, password: str):
     print("Ошибка:", ex)
     return None
   
-def check_access(allowed_customer_id: int):
+def check_access(customer_id: int, allowed_customer_id: int):
+  accesses = get_accesses(customer_id)
+
+  if accesses is None:
+    return None
+  
+  for access in accesses:
+    if access['allowed_customer_id'] == allowed_customer_id:
+      return access
+  
+  return None
+
+def get_customer_by_email(email: str):
   conn = psycopg2.connect(
     dbname=_dbname,
     user=_user,
@@ -286,9 +298,9 @@ def check_access(allowed_customer_id: int):
 
   cur = conn.cursor()
   try:
-    query = 'SELECT * FROM access WHERE allowed_customer_id = %s'
+    query = 'SELECT * FROM customer WHERE email = %s'
 
-    cur.execute(query, (allowed_customer_id, ))
+    cur.execute(query, (email, ))
 
     rows = cur.fetchall()
 
@@ -296,7 +308,7 @@ def check_access(allowed_customer_id: int):
     conn.close()
 
     if len(rows) > 0:
-      res = dict(zip(['access_id'] + ACCESS_COLS, rows[0]))
+      res = dict(zip(['customer_id'] + CUSTOMER_COLS + ['password'], rows[0]))
       return res
     else:
       return None
@@ -307,3 +319,4 @@ def check_access(allowed_customer_id: int):
   except Exception as ex:
     print("Ошибка:", ex)
     return None
+
