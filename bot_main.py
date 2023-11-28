@@ -1,3 +1,4 @@
+import re
 import arrow
 import requests
 import asyncio
@@ -25,17 +26,15 @@ class UserStates(StatesGroup):
 class ProfileStatesGroup(StatesGroup):
     code = State()
     code_2 = State()
-
+    email_rec = State()
+    email_cal_rec = State()
 
 
 Action_for_start = """
     Дорбро пожаловать!\nЧтобы привязать ваш аккаунт, нажмите - <b>/Authorize</b>"""
 
-Action_for_owner = """
-    Давайте перейдём к планированию. Вы - Директор.\nЧтобы просмотреть ваш календарь на сегодня, нажмите - <b>/Check_Calendar</b>\nЧтобы просмотреть у кого есть доступ к вашему календарю, нажмите - <b>/Check_Accesses</b>"""
-
 Action_for_user = """
-    Давайте перейдём к календарю.\nЧтобы запросить доступ к календарю директора, нажмите \n<b>/Ask_for_access</b>"""
+    Давайте перейдём к календарю.\nЧтобы запросить доступ к чужому календарю, нажмите \n<b>/Ask_for_access</b>\nЧтобы получить свой - <b>/Check_Calendar</b>\nЧтобы проверить предоставленные доступы - <b>/Check_Accesses</b>"""
 
 Action_for_non_auth = """
     Вы не авторизованы, поэтому я не могу запросить доступ к каледнарю.\nПожалуйста авторизуйтесь - <b>/Authorize</b> или остановите бота - <b>/Cancel</b>"""
@@ -44,7 +43,7 @@ Action_for_reset = """
     Вы прервали работу Бота!\nБот приостановлен, для перезапуска нажмите кнопку ниже ↓"""
 
 Text_for_Ask = """
-    Вы отправили запрос на доступ\nОжидайте ответ от Директора"""
+    Вы отправили запрос на доступ\nОжидайте ответ от пользователя"""
 
 
 async def on_startup(dp):
@@ -62,14 +61,9 @@ async def reactivate_bot(message: types.Message):
     await message.answer('Бот перезапущен')
     user_id = int(message.from_user.id)
     if check_telegram_id(user_id):
-        user_dict = get_user_by_telegram(user_id)
-
-        if user_dict['role'] == 'director':
-            await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
-        else:
-            await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
+        await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
-        await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0, 0))
+        await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
     await UserStates.ACTIVE.set()
 
 
@@ -77,14 +71,9 @@ async def reactivate_bot(message: types.Message):
 async def cmd_start(message: types.Message) -> None:
     user_id = int(message.from_user.id)
     if check_telegram_id(user_id):
-        user_dict = get_user_by_telegram(user_id)
-
-        if user_dict['role'] == 'director':
-            await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
-        else:
-            await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
+        await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
-        await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0, 0))
+        await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
 
 
 @dp.message_handler(commands=['Authorize'])
@@ -92,13 +81,7 @@ async def cmd_create(message: types.Message) -> None:
     user_id = int(message.from_user.id)
     if check_telegram_id(user_id):
         await message.answer("Вы уже подключены, авторизовываться не надо")
-        user_dict = get_user_by_telegram(user_id)
-
-        if user_dict['role'] == 'director':
-            await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
-        else:
-            await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
-
+        await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text=f'Давайте привяжем вас к вашему аккаунту.\nДля этого авторизуйтесь:', reply_markup=url)
         await message.answer(text=f'Далее отправьте мне код для подтверждения') 
@@ -131,16 +114,8 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         user_info = response.json()
-        if get_director_id() is not None:
-            flag = 'user'
-        else:
-            flag = 'director'
-
-        add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], flag, user_info['login']])
-        if flag == 'director':
-            await message.answer(text = Action_for_owner, parse_mode='HTML', reply_markup=get_kb(1, 1))
-        else:
-            await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1, 0))
+        add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'user', user_info['login']])
+        await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
         await state.finish()
     else:
         await message.answer(text='Неверный код')
@@ -157,22 +132,26 @@ async def check_calendar(message: types.Message, state: FSMContext):
         await ProfileStatesGroup.code_2.set()
     else:
         info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
-        if len(info_dict) != 0:
-            string = ''
-            i = 1
-            for event in info_dict:
-                name = event['event']
-                name = name.encode('latin-1').decode('utf-8')
-                start = event['start']
-                start = arrow.get(start).format("HH:mm")
-                end = event['end']
-                end = arrow.get(end).format("HH:mm")
-                string += f'{i}: {name} с {start} до {end}\n'
-                i += 1
-            await message.answer(text=string)
-            await state.finish()
+        if info_dict is not None:
+            if len(info_dict) != 0:
+                string = ''
+                i = 1
+                for event in info_dict:
+                    name = event['event']
+                    name = name.encode('latin-1').decode('utf-8')
+                    start = event['start']
+                    start = arrow.get(start).format("HH:mm")
+                    end = event['end']
+                    end = arrow.get(end).format("HH:mm")
+                    string += f'{i}: {name} с {start} до {end}\n'
+                    i += 1
+                await message.answer(text=string)
+                await state.finish()
+            else:
+                await message.answer(text='Запланированных дел нет')
+                await state.finish()
         else:
-            await message.answer(text='Запланированных дел нет')
+            await message.answer(text='Пользователь зарегистрировался через неверный пароль, мы не можем предоставить его календарь')
             await state.finish()
 
 
@@ -180,14 +159,14 @@ async def check_calendar(message: types.Message, state: FSMContext):
 async def login_handler(message: types.Message, state: FSMContext):
     user_cust = get_cust_by_tel(message.from_user.id)
     add_password(user_cust, message.text)
-    await message.answer(text='Пароль добавлен, теперь нажмите <b>/Check_Calendar</b> ещё раз', parse_mode='HTML')
+    await message.answer(text='Пароль добавлен, теперь нажмите <b>/Check_Calendar</b> ещё раз', parse_mode='HTML', reply_markup=get_kb(1))
     await state.finish()
 
 
 @dp.message_handler(commands=['Check_Accesses'])
-async def check_access(message: types.Message):
-    director_cust = get_cust_by_tel(message.from_user.id)
-    accesses_dict = get_accesses(director_cust)
+async def check_own_access(message: types.Message):
+    user_dict = get_user_by_telegram(message.from_user.id)
+    accesses_dict = get_accesses(user_dict['customer_id'])
     if accesses_dict is not None:
         string = 'Вот список доступов:\n'
         for access in accesses_dict:
@@ -204,106 +183,86 @@ async def check_access(message: types.Message):
 
 @dp.message_handler(commands=['Ask_for_Access'])
 async def ask_for_access(message: types.Message):
-    director_id = get_director_id()
-    if director_id is not None:
-        user_dict = get_user_by_telegram(message.from_user.id)
-        user_cust = user_dict['customer_id']
-        director_cust = get_cust_by_tel(director_id)
-        accesses_dict = get_accesses(director_cust)
-        flag = 0
-        if accesses_dict is not None:
-            for access in accesses_dict:
-                if user_cust == access['allowed_customer_id']:
-                    flag = 1
-                    break
-            if flag:
-                await message.answer(text='У вас уже есть доступ')
-        if accesses_dict is None or flag == 0:
-            user_dict = get_user_by_telegram(message.from_user.id)
-            name, surname, email = user_dict['name'], user_dict['surname'], user_dict['email']
-            await message.answer(text=Text_for_Ask)
-            await bot.send_message(chat_id=director_id, text=f'Вам пришёл запрос на доступ к вашему графику от {name} {surname}, {email}', reply_markup=get_owner_choice_kb(message.from_user.id))
+    await message.answer(text='К чьему календарю вы хотите получить доступ? Отпрайте email')
+    await ProfileStatesGroup.email_rec.set()
+
+
+@dp.message_handler(state=ProfileStatesGroup.email_rec)
+async def email_handler(message: types.Message, state: FSMContext):
+    if not validate_email(message.text):
+        await message.answer(text='Неправильный формат, повторите ввод')
+        await ProfileStatesGroup.email_rec.set()
     else:
-        await message.answer(text='Директора на данный момент в базе нет')
-
-
-
-
-@dp.message_handler(commands='Get_Calendar_Director')
-async def director_calendar(message: types.Message):
-    director_dict = get_director()
-    director_id = director_dict['telegram_id']
-    if director_id is not None:
-        if director_dict['password'] is None:
-            await message.answer(text='Директор ещё не зарегестрировался в календаре')
+        rec_dict = get_customer_by_email(message.text)
+        if rec_dict is not None:
+            await bot.send_message(chat_id=rec_dict['telegram_id'], text=Text_for_Ask, reply_markup=get_owner_choice_kb(message.from_user.id))
+            await message.answer(text='Ожидайте подтверждения от пользователя')
+            await state.finish()
         else:
+            await message.answer(text='Данный пользователь не зарегистрирован в боте')
+            await state.finish()
+
+
+
+@dp.message_handler(commands='Get_User_Calendar')
+async def director_calendar(message: types.Message):
+    await message.answer(text='Чей календарь вы хотите получить? Отправьте почту')
+    await ProfileStatesGroup.email_cal_rec.set()
+
+
+@dp.message_handler(state=ProfileStatesGroup.email_cal_rec)
+async def email_cal_rec(message:types.Message, state: FSMContext):
+    if not validate_email(message.text):
+        await message.answer(text='Неправильный формат, повторите ввод либо нажмите - <b>/Cancel</b>', parse_mode='HTML')
+        await ProfileStatesGroup.email_cal_rec.set()
+    else:
+        rec_dict = get_customer_by_email(message.text)
+        if rec_dict is not None:
             user_dict = get_user_by_telegram(message.from_user.id)
-            user_cust = user_dict['customer_id']
-            director_cust = get_cust_by_tel(director_id)
-            accesses_dict = get_accesses(director_cust)
-            type = ''
-            for access in accesses_dict:
-                if user_cust == access['allowed_customer_id']:
-                    type = access['type']
-                    flag = 1
-                    break
-            if flag:
-                info_dict = get_event_info(director_dict['email'], director_dict['login'], director_dict['password'])
-                # if type == 'enc':
-                #     if len(info_dict) != 0:
-                #         string = ''
-                #         i = 1
-                #         for event in info_dict:
-                #             start = event['start']
-                #             start = arrow.get(start).format("HH:mm")
-                #             end = event['end']
-                #             end = arrow.get(end).format("HH:mm")
-                #             string += f'{i}: С {start} до {end}\n'
-                #             i += 1
-                #         await message.answer(text=string)
-                #     else:
-                #         await message.answer(text='У Директора запланированных дел нет')
-                # else:
-                #     if len(info_dict) != 0:
-                #         string = ''
-                #         i = 1
-                #         for event in info_dict:
-                #             name = event['event']
-                #             name = name.encode('latin-1').decode('utf-8')
-                #             start = event['start']
-                #             start = arrow.get(start).time()
-                #             end = event['end']
-                #             end = arrow.get(end).time()
-                #             string += f'{i}: {name} с {start} до {end}\n'
-                #             i += 1
-                #         await message.answer(text=string)
-                #     else:
-                #         await message.answer(text='У Директора запланированных дел нет')
-                if len(info_dict) != 0:
-                    string = ''
-                    i = 1
-                    for event in info_dict:
-                        if type == 'enc':
-                            start = event['start']
-                            start = arrow.get(start).format("HH:mm")
-                            end = event['end']
-                            end = arrow.get(end).format("HH:mm")
-                            string += f'{i}: С {start} до {end}\n'
-                            i += 1
-                        else:
-                            name = event['event']
-                            name = name.encode('latin-1').decode('utf-8')
-                            start = event['start']
-                            start = arrow.get(start).format("HH:mm")
-                            end = event['end']
-                            end = arrow.get(end).format("HH:mm")
-                            string += f'{i}: {name} с {start} до {end}\n'
-                            i += 1
-                    await message.answer(text=string)
-                else:
-                    await message.answer(text='У директора запланированных дел нет')
+            if user_dict['password'] is None:
+                await message.answer(text='Пользователь не добавил свой календарь')
+                await state.finish()
             else:
-                await message.answer(text='У вас нет доступа')
+                access = check_access(rec_dict['customer_id'], user_dict['customer_id'])
+                if access is not None:
+                    info_dict = get_event_info(rec_dict['email'], rec_dict['login'], rec_dict['password'])
+                    if len(info_dict) != 0:
+                        if access['type'] == 'enc':
+                            string = ''
+                            i = 1
+                            for event in info_dict:
+                                start = event['start']
+                                start = arrow.get(start).format("HH:mm")
+                                end = event['end']
+                                end = arrow.get(end).format("HH:mm")
+                                string += f'{i}: С {start} до {end}\n'
+                                i += 1
+                            await message.answer(text=string)
+                            await state.finish()
+                        else:
+                            string = ''
+                            i = 1
+                            for event in info_dict:
+                                name = event['event']
+                                name = name.encode('latin-1').decode('utf-8')
+                                start = event['start']
+                                start = arrow.get(start).format("HH:mm")
+                                end = event['end']
+                                end = arrow.get(end).format("HH:mm")
+                                string += f'{i}: {name} с {start} до {end}\n'
+                                i += 1
+                            await message.answer(text=string)
+                            await state.finish()
+                    else:
+                        await message.answer(text='У пользователя запланированных дел нет')
+                        await state.finish()
+                else:
+                    await message.answer(text='У вас нет доступа')
+                    await state.finish()
+        else:
+            await message.answer(text='Данный пользователь ещё не зарегестрировался в боте')
+            await state.finish()
+
 
 
 
@@ -331,20 +290,19 @@ async def full_access_handler(callback: types.CallbackQuery):
 
 
 
-
 @dp.callback_query_handler(lambda c: c.data.startswith('one'))
 async def one_day_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
 
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
-    director_cust = get_cust_by_tel(callback.message.chat.id)
+    owner_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
+    add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('seven'))
@@ -353,13 +311,13 @@ async def seven_days_handler(callback: types.CallbackQuery):
 
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
-    director_cust = get_cust_by_tel(callback.message.chat.id)
+    owner_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
+    add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('fourteen'))
@@ -368,13 +326,13 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
     
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
-    director_cust = get_cust_by_tel(callback.message.chat.id)
+    owner_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
+    add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('thirty'))
@@ -383,13 +341,13 @@ async def thirty_days_handler(callback: types.CallbackQuery):
     
     user_id, type_access, days = callback.data.split(':')[1:]
     user_cust = get_cust_by_tel(user_id)
-    director_cust = get_cust_by_tel(callback.message.chat.id)
+    owner_cust = get_cust_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()   
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_date])
+    add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('own_choice'))

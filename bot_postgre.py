@@ -1,3 +1,4 @@
+import re
 import ics
 import caldav
 import requests
@@ -198,9 +199,13 @@ def print_customer():
 def get_event_info(email: str, username: str, password: str):
   res = []
 
-  parse_email = email.replace('@','%40')
-  url = f'https://caldav.yandex.ru/calendars/{parse_email}/'
-  client = caldav.DAVClient(url, username=username, password=password)
+  try:
+    parse_email = email.replace('@','%40')
+    url = f'https://caldav.yandex.ru/calendars/{parse_email}/'
+    client = caldav.DAVClient(url, username=username, password=password)
+  except requests.HTTPError as e:
+    print('Неверный пароль приложения!')
+    return None
 
   principal = client.principal()
   calendars = principal.calendars()
@@ -320,3 +325,10 @@ def get_customer_by_email(email: str):
     print("Ошибка:", ex)
     return None
 
+
+def validate_email(email):
+  email_pattern = r'^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
+  if re.search(email_pattern, email):
+    return True
+  else:
+    return False

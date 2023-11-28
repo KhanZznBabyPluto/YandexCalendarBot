@@ -4,16 +4,14 @@ from aiogram.dispatcher.filters import Text
 from bot_postgre import *
 from bot_token import client_secret, client_id, redirect_uri
 
-def get_kb(flag, flag_access) -> ReplyKeyboardMarkup:
+def get_kb(flag) -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton('/Authorize'))
     if flag:
         kb.add(KeyboardButton('/Check_Calendar'))
-        if flag_access:
-            kb.add(KeyboardButton('/Check_Accesses'))
-        else:
-            kb.add(KeyboardButton('/Get_Calendar_Director'))
-            kb.add(KeyboardButton('/Ask_for_Access'))
+        kb.add(KeyboardButton('/Check_Accesses'))
+        kb.add(KeyboardButton('/Get_User_Calendar'))
+        kb.add(KeyboardButton('/Ask_for_Access'))
     kb.add(KeyboardButton('/Cancel'))
     
     return kb
