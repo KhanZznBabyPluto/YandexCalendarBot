@@ -224,41 +224,46 @@ async def email_cal_rec(message:types.Message, state: FSMContext):
                 await state.finish()
             else:
                 access = check_access(rec_dict['customer_id'], user_dict['customer_id'])
-                if access is not None:
-                    info_dict = get_event_info(rec_dict['email'], rec_dict['login'], rec_dict['password'])
-                    if len(info_dict) != 0:
-                        if access['type'] == 'enc':
-                            string = ''
-                            i = 1
-                            for event in info_dict:
-                                start = event['start']
-                                start = arrow.get(start).format("HH:mm")
-                                end = event['end']
-                                end = arrow.get(end).format("HH:mm")
-                                string += f'{i}: С {start} до {end}\n'
-                                i += 1
-                            await message.answer(text=string)
-                            await state.finish()
+                end = access['end_time']
+                if datetime.datetime.now() > end:
+                    await message.answer(text='Ваш доступ истёк. Запросите ещё раз через - <b>/Ask_for_Access</b>', parse_mode='HTML')
+                    await state.finish()
+                else:
+                    if access is not None:
+                        info_dict = get_event_info(rec_dict['email'], rec_dict['login'], rec_dict['password'])
+                        if len(info_dict) != 0:
+                            if access['type'] == 'enc':
+                                string = ''
+                                i = 1
+                                for event in info_dict:
+                                    start = event['start']
+                                    start = arrow.get(start).format("HH:mm")
+                                    end = event['end']
+                                    end = arrow.get(end).format("HH:mm")
+                                    string += f'{i}: С {start} до {end}\n'
+                                    i += 1
+                                await message.answer(text=string)
+                                await state.finish()
+                            else:
+                                string = ''
+                                i = 1
+                                for event in info_dict:
+                                    name = event['event']
+                                    name = name.encode('latin-1').decode('utf-8')
+                                    start = event['start']
+                                    start = arrow.get(start).format("HH:mm")
+                                    end = event['end']
+                                    end = arrow.get(end).format("HH:mm")
+                                    string += f'{i}: {name} с {start} до {end}\n'
+                                    i += 1
+                                await message.answer(text=string)
+                                await state.finish()
                         else:
-                            string = ''
-                            i = 1
-                            for event in info_dict:
-                                name = event['event']
-                                name = name.encode('latin-1').decode('utf-8')
-                                start = event['start']
-                                start = arrow.get(start).format("HH:mm")
-                                end = event['end']
-                                end = arrow.get(end).format("HH:mm")
-                                string += f'{i}: {name} с {start} до {end}\n'
-                                i += 1
-                            await message.answer(text=string)
+                            await message.answer(text='У пользователя запланированных дел нет')
                             await state.finish()
                     else:
-                        await message.answer(text='У пользователя запланированных дел нет')
+                        await message.answer(text='У вас нет доступа')
                         await state.finish()
-                else:
-                    await message.answer(text='У вас нет доступа')
-                    await state.finish()
         else:
             await message.answer(text='Данный пользователь ещё не зарегестрировался в боте')
             await state.finish()
@@ -302,7 +307,11 @@ async def one_day_handler(callback: types.CallbackQuery):
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
+    access = check_access(owner_cust, user_cust)
+    if access is not None:
+        update_access_end_time(owner_cust, user_cust, type_access, end_date)
+    else:
+        add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('seven'))
@@ -317,7 +326,11 @@ async def seven_days_handler(callback: types.CallbackQuery):
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
+    access = check_access(owner_cust, user_cust)
+    if access is not None:
+        update_access_end_time(owner_cust, user_cust, type_access, end_date)
+    else:
+        add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('fourteen'))
@@ -332,7 +345,11 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
+    access = check_access(owner_cust, user_cust)
+    if access is not None:
+        update_access_end_time(owner_cust, user_cust, type_access, end_date)
+    else:
+        add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('thirty'))
@@ -347,7 +364,11 @@ async def thirty_days_handler(callback: types.CallbackQuery):
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
-    add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
+    access = check_access(owner_cust, user_cust)
+    if access is not None:
+        update_access_end_time(owner_cust, user_cust, type_access, end_date)
+    else:
+        add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('own_choice'))
