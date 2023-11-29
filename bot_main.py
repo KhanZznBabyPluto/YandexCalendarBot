@@ -151,8 +151,8 @@ async def check_calendar(message: types.Message, state: FSMContext):
                 await message.answer(text='Запланированных дел нет')
                 await state.finish()
         else:
-            await message.answer(text='Пользователь зарегистрировался через неверный пароль, мы не можем предоставить его календарь')
-            await state.finish()
+            await message.answer(text='Вы зарегистрировались через неправильный пароль. Введите его ещё раз')
+            await ProfileStatesGroup.code_2.set()
 
 
 @dp.message_handler(state=ProfileStatesGroup.code_2)

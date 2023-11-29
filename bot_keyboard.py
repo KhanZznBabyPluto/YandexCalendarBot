@@ -6,12 +6,13 @@ from bot_token import client_secret, client_id, redirect_uri
 
 def get_kb(flag) -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton('/Authorize'))
     if flag:
         kb.add(KeyboardButton('/Check_Calendar'))
         kb.add(KeyboardButton('/Check_Accesses'))
         kb.add(KeyboardButton('/Get_User_Calendar'))
         kb.add(KeyboardButton('/Ask_for_Access'))
+    else:
+        kb.add(KeyboardButton('/Authorize'))
     kb.add(KeyboardButton('/Cancel'))
     
     return kb

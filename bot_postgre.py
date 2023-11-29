@@ -326,6 +326,7 @@ def validate_email(email):
   else:
     return False
 
+
 def update_access_end_time(customer_id: int, allowed_customer_id: str, type_access: str, end_time):
   conn = psycopg2.connect(
     dbname=_dbname,
