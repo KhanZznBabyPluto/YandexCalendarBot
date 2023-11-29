@@ -224,12 +224,12 @@ async def email_cal_rec(message:types.Message, state: FSMContext):
                 await state.finish()
             else:
                 access = check_access(rec_dict['customer_id'], user_dict['customer_id'])
-                end = access['end_time']
-                if datetime.datetime.now() > end:
-                    await message.answer(text='Ваш доступ истёк. Запросите ещё раз через - <b>/Ask_for_Access</b>', parse_mode='HTML')
-                    await state.finish()
-                else:
-                    if access is not None:
+                if access is not None:
+                    end = access['end_time']
+                    if datetime.datetime.now() > end:
+                        await message.answer(text='Ваш доступ истёк. Запросите ещё раз через - <b>/Ask_for_Access</b>', parse_mode='HTML')
+                        await state.finish()
+                    else:
                         info_dict = get_event_info(rec_dict['email'], rec_dict['login'], rec_dict['password'])
                         if len(info_dict) != 0:
                             if access['type'] == 'enc':
@@ -261,9 +261,9 @@ async def email_cal_rec(message:types.Message, state: FSMContext):
                         else:
                             await message.answer(text='У пользователя запланированных дел нет')
                             await state.finish()
-                    else:
-                        await message.answer(text='У вас нет доступа')
-                        await state.finish()
+                else:
+                    await message.answer(text='У вас нет доступа')
+                    await state.finish()
         else:
             await message.answer(text='Данный пользователь ещё не зарегестрировался в боте')
             await state.finish()
