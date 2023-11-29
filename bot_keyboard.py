@@ -33,8 +33,8 @@ def get_day_choice_kb(user_id, type_access) -> InlineKeyboardButton:
     button_2 = InlineKeyboardButton(text='На 7 дней', callback_data=f'seven:{user_id}:{type_access}:7')
     button_3 = InlineKeyboardButton(text='На 14 дней', callback_data=f'fourteen:{user_id}:{type_access}:14')
     button_4 = InlineKeyboardButton(text='На 30 дней', callback_data=f'thirty:{user_id}:{type_access}:30')
-    button_5 = InlineKeyboardButton(text='Свой промежуток', callback_data=f'own_choice:{user_id}:{type_access}')
-    kb.add(button_1, button_2, button_3, button_4, button_5)
+    # button_5 = InlineKeyboardButton(text='Свой промежуток', callback_data=f'own_choice:{user_id}:{type_access}')
+    kb.add(button_1, button_2, button_3, button_4)
 
     return kb
 
