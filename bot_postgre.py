@@ -238,14 +238,6 @@ def get_event_info(email: str, username: str, password: str):
       print(response.status_code)
   return res
 
-
-
-def get_director_id():
-    dict = get_director()
-    if dict is not None:
-      return dict['telegram_id']
-    else:
-      return None
   
 def get_cust_by_tel(telegram_id: str):
   dict = get_user_by_telegram(telegram_id)
@@ -332,3 +324,30 @@ def validate_email(email):
     return True
   else:
     return False
+
+def update_access_end_time(customer_id: int, allowed_customer_id: str, type_access: str, end_time):
+  conn = psycopg2.connect(
+    dbname=_dbname,
+    user=_user,
+    password=_password,
+    host=_host,
+    port=_port
+  )
+
+  cur = conn.cursor()
+
+  try:
+    query = "UPDATE access SET type = %s, end_time = %s WHERE customer_id = %s AND allowed_customer_id = %s"
+
+    cur.execute(query, (type_access, end_time, customer_id, allowed_customer_id))
+
+    conn.commit()
+      
+  except psycopg2.Error as e:
+    print("Ошибка PostgreSQL:", e)
+    return None
+  except Exception as ex:
+    print("Ошибка:", ex)
+    return None
+
+# update_access_end_time(27, 26, 'enc', datetime.datetime.now())
