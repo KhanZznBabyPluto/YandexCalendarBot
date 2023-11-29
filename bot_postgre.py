@@ -203,40 +203,41 @@ def get_event_info(email: str, username: str, password: str):
     parse_email = email.replace('@','%40')
     url = f'https://caldav.yandex.ru/calendars/{parse_email}/'
     client = caldav.DAVClient(url, username=username, password=password)
-  except requests.HTTPError as e:
-    print('Неверный пароль приложения!')
+
+    principal = client.principal()
+    calendars = principal.calendars()
+
+    today = datetime.datetime.now()
+    start_date = today
+    end_date = datetime.datetime.combine(today.date(), datetime.time(23, 59))
+
+    event_urls = []
+    for calendar in calendars:
+      events = calendar.date_search(start=start_date, end=end_date)
+      for event in events:
+        event_urls.append(str(event)[7:])
+
+    for event_url in event_urls:
+      response = requests.get(event_url, auth=(username, password))
+
+      if response.status_code == 200:
+        ics_content = response.text
+        calendar = ics.Calendar(ics_content)
+
+        for event in calendar.events:
+          tmp = {}
+          tmp['event'] = event.name
+          tmp['start'] = event.begin
+          tmp['end'] = event.end
+          res.append(tmp)
+
+      else:
+        print(f'Проблемы с доступом к календарю по url: {event_url}\nПользователь: {username}.\nКод ошибки:', response.status_code)
+    return res
+  except caldav.lib.error.AuthorizationError as e:
+    print(f'Неправильный пароль приложения у пользователя {username}')
     return None
 
-  principal = client.principal()
-  calendars = principal.calendars()
-
-  today = datetime.datetime.now()
-  start_date = today
-  end_date = datetime.datetime.combine(today.date(), datetime.time(23, 59))
-
-  event_urls = []
-  for calendar in calendars:
-    events = calendar.date_search(start=start_date, end=end_date)
-    for event in events:
-      event_urls.append(str(event)[7:])
-
-  for event_url in event_urls:
-    response = requests.get(event_url, auth=(username, password))
-
-    if response.status_code == 200:
-      ics_content = response.text
-      calendar = ics.Calendar(ics_content)
-
-      for event in calendar.events:
-        tmp = {}
-        tmp['event'] = event.name
-        tmp['start'] = event.begin
-        tmp['end'] = event.end
-        res.append(tmp)
-
-    else:
-      print(response.status_code)
-  return res
 
   
 def get_cust_by_tel(telegram_id: str):
