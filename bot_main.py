@@ -157,10 +157,31 @@ async def check_calendar(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=ProfileStatesGroup.code_2)
 async def login_handler(message: types.Message, state: FSMContext):
-    user_cust = get_cust_by_tel(message.from_user.id)
-    add_password(user_cust, message.text)
-    await message.answer(text='Пароль добавлен, теперь нажмите <b>/Check_Calendar</b> ещё раз', parse_mode='HTML', reply_markup=get_kb(1))
-    await state.finish()
+    user_dict = get_user_by_telegram(message.from_user.id)
+    add_password(user_dict['customer_id'], message.text)
+    await message.answer(text='Пароль добавлен')
+    info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
+    if info_dict is not None:
+        if len(info_dict) != 0:
+            string = ''
+            i = 1
+            for event in info_dict:
+                name = event['event']
+                name = name.encode('latin-1').decode('utf-8')
+                start = event['start']
+                start = arrow.get(start).format("HH:mm")
+                end = event['end']
+                end = arrow.get(end).format("HH:mm")
+                string += f'{i}: {name} с {start} до {end}\n'
+                i += 1
+            await message.answer(text=string)
+            await state.finish()
+        else:
+            await message.answer(text='Запланированных дел нет')
+            await state.finish()
+    else:
+        await message.answer(text='Вы зарегистрировались через неправильный пароль. Введите его ещё раз')
+        await state.finish()
 
 
 @dp.message_handler(commands=['Check_Accesses'])
@@ -190,7 +211,7 @@ async def ask_for_access(message: types.Message):
 @dp.message_handler(state=ProfileStatesGroup.email_rec)
 async def email_handler(message: types.Message, state: FSMContext):
     if not validate_email(message.text):
-        await message.answer(text='Неправильный формат, повторите ввод')
+        await message.answer(text='Неправильный формат, повторите ввод либо нажмите - <b>/Cancel</b>', parse_mode='HTML')
         await ProfileStatesGroup.email_rec.set()
     else:
         rec_dict = get_customer_by_email(message.text)
@@ -265,7 +286,7 @@ async def email_cal_rec(message:types.Message, state: FSMContext):
                     await message.answer(text='У вас нет доступа')
                     await state.finish()
         else:
-            await message.answer(text='Данный пользователь ещё не зарегестрировался в боте')
+            await message.answer(text='Данный пользователь не зарегистрирован в боте')
             await state.finish()
 
 
