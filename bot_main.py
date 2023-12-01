@@ -3,13 +3,16 @@ import arrow
 import requests
 import asyncio
 import datetime
-from aiogram import types, executor, Bot, Dispatcher
 from aiogram.types import CallbackQuery
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
+from aiogram import types, executor, Bot, Dispatcher
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
-from bot_postgre import *
+from bot_db import *
+from bot_func import *
+from bot_yapi import *
+from bot_schedule import *
 from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
 from bot_keyboard import url, url_pass, reactivate_kb, get_kb, get_owner_choice_kb, get_day_choice_kb
 
@@ -114,7 +117,7 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         user_info = response.json()
-        add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], 'user', user_info['login']])
+        add_info('customer', CUSTOMER_COLS, [message.from_user.id, access_token, user_info['default_email'], user_info['first_name'], user_info['last_name'], user_info['login']])
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
         await state.finish()
     else:
@@ -131,7 +134,7 @@ async def check_calendar(message: types.Message, state: FSMContext):
         await message.answer(text=f'Далее отправьте мне код для подтверждения')
         await ProfileStatesGroup.code_2.set()
     else:
-        info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
+        info_dict = get_events(user_dict['customer_id'])
         if info_dict is not None:
             if len(info_dict) != 0:
                 string = ''
@@ -160,7 +163,7 @@ async def login_handler(message: types.Message, state: FSMContext):
     user_dict = get_user_by_telegram(message.from_user.id)
     add_password(user_dict['customer_id'], message.text)
     await message.answer(text='Пароль добавлен')
-    info_dict = get_event_info(user_dict['email'], user_dict['login'], user_dict['password'])
+    info_dict = get_events(user_dict['customer_id'])
     if info_dict is not None:
         if len(info_dict) != 0:
             string = ''
@@ -251,7 +254,7 @@ async def email_cal_rec(message:types.Message, state: FSMContext):
                         await message.answer(text='Ваш доступ истёк. Запросите ещё раз через - <b>/Ask_for_Access</b>', parse_mode='HTML')
                         await state.finish()
                     else:
-                        info_dict = get_event_info(rec_dict['email'], rec_dict['login'], rec_dict['password'])
+                        info_dict = get_events(rec_dict['customer_id'])
                         if len(info_dict) != 0:
                             if access['type'] == 'enc':
                                 string = ''
@@ -321,8 +324,8 @@ async def one_day_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
 
     user_id, type_access, days = callback.data.split(':')[1:]
-    user_cust = get_cust_by_tel(user_id)
-    owner_cust = get_cust_by_tel(callback.message.chat.id)
+    user_cust = get_cust_id_by_tel(user_id)
+    owner_cust = get_cust_id_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
@@ -340,8 +343,8 @@ async def seven_days_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
 
     user_id, type_access, days = callback.data.split(':')[1:]
-    user_cust = get_cust_by_tel(user_id)
-    owner_cust = get_cust_by_tel(callback.message.chat.id)
+    user_cust = get_cust_id_by_tel(user_id)
+    owner_cust = get_cust_id_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
@@ -359,8 +362,8 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     
     user_id, type_access, days = callback.data.split(':')[1:]
-    user_cust = get_cust_by_tel(user_id)
-    owner_cust = get_cust_by_tel(callback.message.chat.id)
+    user_cust = get_cust_id_by_tel(user_id)
+    owner_cust = get_cust_id_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
 
@@ -378,8 +381,8 @@ async def thirty_days_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     
     user_id, type_access, days = callback.data.split(':')[1:]
-    user_cust = get_cust_by_tel(user_id)
-    owner_cust = get_cust_by_tel(callback.message.chat.id)
+    user_cust = get_cust_id_by_tel(user_id)
+    owner_cust = get_cust_id_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()   
 
@@ -405,8 +408,8 @@ async def own_choice_handler(callback: types.CallbackQuery):
 #     await message.reply(text=f'Доступ предоставлен на {message.text} дня/дней', reply_markup= None)
     
 #     user_id, type_access = callback.data.split(':')[1:]
-#     user_cust = get_cust_by_tel(user_id)
-#     director_cust = get_cust_by_tel(callback.message.chat.id)
+#     user_cust = get_cust_id_by_tel(user_id)
+#     director_cust = get_cust_id_by_tel(callback.message.chat.id)
 #     end_dt = datetime.now() + timedelta(days=30)   
 
 #     add_info('access', ACCESS_COLS, [director_cust, user_cust, type_access, end_dt])
@@ -418,6 +421,19 @@ async def own_choice_handler(callback: types.CallbackQuery):
 # async def access_handler(self, update, context, user_id, type_access, end_dt, state : FSMContext):
 #     await bot.send_message(chat_id=user_id, text=f'Вам дан доступ {type_access} до {end_dt}')
 #     await state.finish()
+
+
+async def updater(user_id: int):
+  res = update_if_changed()
+
+  if res == None:
+    await bot.send_message(chat_id=user_id, text='Вы зарегистрировались через неправильный пароль.')
+
+  elif res == True:
+    user_dict = get_user_by_telegram(user_id)
+    events = get_events(user_dict['customer_id'])
+    await bot.send_message(chat_id=user_id, text=f'События у пользователя были изменены. Вот новые: {events}')
+
 
 
 
