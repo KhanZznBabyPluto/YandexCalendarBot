@@ -175,10 +175,10 @@ async def check_calendar(message: types.Message, state: FSMContext):
 @dp.message_handler(state=ProfileStatesGroup.code_2)
 async def login_handler(message: types.Message, state: FSMContext):
     user_dict = get_user_by_telegram(message.from_user.id)
-    res = update_if_changed(user_dict['customer_id'], user_dict['email'], user_dict['login'], user_dict['password'])
+    res = update_if_changed(user_dict['customer_id'], user_dict['email'], user_dict['login'], message.text)
     if res == None:
         await message.answer(text='Вы зарегистрировались через неправильный пароль. Введите его ещё раз')
-        await state.finish()
+        await ProfileStatesGroup.code_2.set()
     else:
         add_password(user_dict['customer_id'], message.text)
         await message.answer(text='Пароль добавлен')
@@ -456,7 +456,7 @@ async def own_choice_handler(callback: types.CallbackQuery):
 
 
 async def scheduler():
-    aioschedule.every(1).minutes.do(updater_call)
+    aioschedule.every(10).minutes.do(updater_call)
     while True:
         await aioschedule.run_pending()  
         await asyncio.sleep(1)
