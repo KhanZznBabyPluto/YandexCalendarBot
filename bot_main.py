@@ -1,8 +1,10 @@
 import re
 import arrow
-import requests
 import asyncio
+import hashlib
+import requests
 import datetime
+import aioschedule
 from aiogram.types import CallbackQuery
 from aiogram.dispatcher import FSMContext
 from aiogram import types, executor, Bot, Dispatcher
@@ -20,6 +22,7 @@ storage = MemoryStorage()
 bot = Bot(TOKEN_API)
 dp = Dispatcher(bot, storage=storage)
 
+users_calls = {}
 
 class UserStates(StatesGroup):
     ACTIVE = State()
@@ -51,6 +54,7 @@ Text_for_Ask = """
 
 async def on_startup(dp):
     print('Bot has been started')
+    asyncio.create_task(scheduler())
 
 
 @dp.message_handler(commands=['Cancel'])
@@ -128,12 +132,56 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 
 @dp.message_handler(commands=['Check_Calendar'])
 async def check_calendar(message: types.Message, state: FSMContext):
-    user_dict = get_user_by_telegram(message.from_user.id)
+    user_id = message.from_user.id
+    user_hash = hashlib.md5(str(user_id).encode()).hexdigest()
+    user_dict = get_user_by_telegram(user_id)
     if user_dict['password'] is None:
         await message.answer(text='Для того, чтобы получить календарь, перейдите по ссылке, установите пароль на календарь:', reply_markup=url_pass)
         await message.answer(text=f'Далее отправьте мне код для подтверждения')
         await ProfileStatesGroup.code_2.set()
     else:
+        today = datetime.date.today()
+        if user_hash not in users_calls:
+            users_calls[user_hash] = today
+            res = update_if_changed(user_dict['customer_id'], user_dict['email'], user_dict['login'], user_dict['password'])
+        elif users_calls[user_hash] < today:
+            users_calls[user_hash] = today
+            res = update_if_changed(user_dict['customer_id'], user_dict['email'], user_dict['login'], user_dict['password'])
+        if res == None:
+            await message.answer(text='Вы зарегистрировались через неправильный пароль. Введите его ещё раз')
+            await ProfileStatesGroup.code_2.set()
+        else:
+            info_dict = get_events(user_dict['customer_id'])
+            if info_dict is not None:
+                if len(info_dict) != 0:
+                    string = ''
+                    i = 1
+                    for event in info_dict:
+                        name = event['event']
+                        name = name.encode('latin-1').decode('utf-8')
+                        start = event['start']
+                        start = arrow.get(start).format("HH:mm")
+                        end = event['end']
+                        end = arrow.get(end).format("HH:mm")
+                        string += f'{i}: {name} с {start} до {end}\n'
+                        i += 1
+                    await message.answer(text=string)
+                    await state.finish()
+                else:
+                    await message.answer(text='Запланированных дел нет')
+                    await state.finish()
+
+
+@dp.message_handler(state=ProfileStatesGroup.code_2)
+async def login_handler(message: types.Message, state: FSMContext):
+    user_dict = get_user_by_telegram(message.from_user.id)
+    res = update_if_changed(user_dict['customer_id'], user_dict['email'], user_dict['login'], user_dict['password'])
+    if res == None:
+        await message.answer(text='Вы зарегистрировались через неправильный пароль. Введите его ещё раз')
+        await state.finish()
+    else:
+        add_password(user_dict['customer_id'], message.text)
+        await message.answer(text='Пароль добавлен')
         info_dict = get_events(user_dict['customer_id'])
         if info_dict is not None:
             if len(info_dict) != 0:
@@ -153,38 +201,6 @@ async def check_calendar(message: types.Message, state: FSMContext):
             else:
                 await message.answer(text='Запланированных дел нет')
                 await state.finish()
-        else:
-            await message.answer(text='Вы зарегистрировались через неправильный пароль. Введите его ещё раз')
-            await ProfileStatesGroup.code_2.set()
-
-
-@dp.message_handler(state=ProfileStatesGroup.code_2)
-async def login_handler(message: types.Message, state: FSMContext):
-    user_dict = get_user_by_telegram(message.from_user.id)
-    add_password(user_dict['customer_id'], message.text)
-    await message.answer(text='Пароль добавлен')
-    info_dict = get_events(user_dict['customer_id'])
-    if info_dict is not None:
-        if len(info_dict) != 0:
-            string = ''
-            i = 1
-            for event in info_dict:
-                name = event['event']
-                name = name.encode('latin-1').decode('utf-8')
-                start = event['start']
-                start = arrow.get(start).format("HH:mm")
-                end = event['end']
-                end = arrow.get(end).format("HH:mm")
-                string += f'{i}: {name} с {start} до {end}\n'
-                i += 1
-            await message.answer(text=string)
-            await state.finish()
-        else:
-            await message.answer(text='Запланированных дел нет')
-            await state.finish()
-    else:
-        await message.answer(text='Вы зарегистрировались через неправильный пароль. Введите его ещё раз')
-        await state.finish()
 
 
 @dp.message_handler(commands=['Check_Accesses'])
@@ -211,6 +227,12 @@ async def ask_for_access(message: types.Message):
     await ProfileStatesGroup.email_rec.set()
 
 
+@dp.message_handler(commands=['Cancel'], state=ProfileStatesGroup.email_rec)
+async def cmd_cancel_email(message: types.Message):
+    await message.reply(text=Action_for_reset, parse_mode='HTML', reply_markup= reactivate_kb)
+    await UserStates.INACTIVE.set()
+
+
 @dp.message_handler(state=ProfileStatesGroup.email_rec)
 async def email_handler(message: types.Message, state: FSMContext):
     if not validate_email(message.text):
@@ -234,6 +256,11 @@ async def director_calendar(message: types.Message):
     await ProfileStatesGroup.email_cal_rec.set()
 
 
+@dp.message_handler(commands=['Cancel'], state=ProfileStatesGroup.email_cal_rec)
+async def cmd_cancel_email(message: types.Message):
+    await message.reply(text=Action_for_reset, parse_mode='HTML', reply_markup= reactivate_kb)
+    await UserStates.INACTIVE.set()
+
 @dp.message_handler(state=ProfileStatesGroup.email_cal_rec)
 async def email_cal_rec(message:types.Message, state: FSMContext):
     if not validate_email(message.text):
@@ -255,6 +282,7 @@ async def email_cal_rec(message:types.Message, state: FSMContext):
                         await state.finish()
                     else:
                         info_dict = get_events(rec_dict['customer_id'])
+                        update_requested(rec_dict['customer_id'], user_dict['customer_id'])
                         if len(info_dict) != 0:
                             if access['type'] == 'enc':
                                 string = ''
@@ -328,6 +356,7 @@ async def one_day_handler(callback: types.CallbackQuery):
     owner_cust = get_cust_id_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
+    update_requested(owner_cust, user_cust)
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
@@ -347,6 +376,7 @@ async def seven_days_handler(callback: types.CallbackQuery):
     owner_cust = get_cust_id_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
+    update_requested(owner_cust, user_cust)
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
@@ -366,6 +396,7 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
     owner_cust = get_cust_id_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
+    update_requested(owner_cust, user_cust)
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
@@ -385,6 +416,7 @@ async def thirty_days_handler(callback: types.CallbackQuery):
     owner_cust = get_cust_id_by_tel(callback.message.chat.id)
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()   
+    update_requested(owner_cust, user_cust)
 
     await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы предоставили доступ до {end_date}')
     await bot.send_message(chat_id=user_id, text=f'Вам предоставлен доступ до {end_date}')
@@ -423,17 +455,92 @@ async def own_choice_handler(callback: types.CallbackQuery):
 #     await state.finish()
 
 
-async def updater(user_id: int):
-  res = update_if_changed()
+async def scheduler():
+    aioschedule.every(1).minutes.do(updater_call)
+    while True:
+        await aioschedule.run_pending()  
+        await asyncio.sleep(1)
 
-  if res == None:
-    await bot.send_message(chat_id=user_id, text='Вы зарегистрировались через неправильный пароль.')
 
-  elif res == True:
-    user_dict = get_user_by_telegram(user_id)
-    events = get_events(user_dict['customer_id'])
-    await bot.send_message(chat_id=user_id, text=f'События у пользователя были изменены. Вот новые: {events}')
 
+async def updater_call():
+    customers = get_customers()
+    for customer in customers:
+        flag = update_if_changed(customer['customer_id'], customer['email'], customer['login'], customer['password'])
+        customer_tel = customer['telegram_id']
+        if flag == None:
+            return
+        elif flag == True:
+            accesses = get_accesses(customer['customer_id'])
+            if accesses is not None:
+                customer_name = customer['name']
+                customer_surname = customer['surname']
+                customer_email = customer['email']
+                for access in accesses:
+                    if access['requested'] == True:
+                        user_id = access['telegram_id']
+                        if datetime.datetime.now() <= access['end_time']:
+                            info_dict = get_events(customer['customer_id'])
+                            if len(info_dict) != 0:
+                                if access['type'] == 'enc':
+                                    string = ''
+                                    i = 1
+                                    for event in info_dict:
+                                        start = event['start']
+                                        start = arrow.get(start).format("HH:mm")
+                                        end = event['end']
+                                        end = arrow.get(end).format("HH:mm")
+                                        string += f'{i}: С {start} до {end}\n'
+                                        i += 1
+                                else:
+                                    string = ''
+                                    i = 1
+                                    for event in info_dict:
+                                        name = event['event']
+                                        name = name.encode('latin-1').decode('utf-8')
+                                        start = event['start']
+                                        start = arrow.get(start).format("HH:mm")
+                                        end = event['end']
+                                        end = arrow.get(end).format("HH:mm")
+                                        string += f'{i}: {name} с {start} до {end}\n'
+                                        i += 1
+                                await bot.send_message(chat_id=user_id, text=f'События у пользователя {customer_name} {customer_surname} {customer_email} были изменены. Вот новые: {string}')
+                            else:
+                                await bot.send_message(chat_id=user_id, text=f'События у пользователя {customer_name} {customer_surname} {customer_email} были изменены. У пользователя запланированных дел нет')
+        else:
+            await bot.send_message(chat_id=customer_tel, text='У вас не было изменений')
+
+
+
+# async def own_calendar_check(message: types.Messages, flag):
+    # if not flag:
+    #     res = update_if_changed()
+    #     if res == None:
+    #         await message.answer(text='Неправильный ввод пароля для календаря')
+    #         return False
+        
+    # user_dict = get_user_by_telegram(message.from_user.id)
+    # add_password(user_dict['customer_id'], message.text)
+    # await message.answer(text='Пароль добавлен')
+    # info_dict = get_events(user_dict['customer_id'])
+    # if info_dict is not None:
+    #     if len(info_dict) != 0:
+    #         string = ''
+    #         i = 1
+    #         for event in info_dict:
+    #             name = event['event']
+    #             name = name.encode('latin-1').decode('utf-8')
+    #             start = event['start']
+    #             start = arrow.get(start).format("HH:mm")
+    #             end = event['end']
+    #             end = arrow.get(end).format("HH:mm")
+    #             string += f'{i}: {name} с {start} до {end}\n'
+    #             i += 1
+    #         await message.answer(text=string)
+    #     else:
+    #         await message.answer(text='Запланированных дел нет')
+
+    #     return True
 
 
 
