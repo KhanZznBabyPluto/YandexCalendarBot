@@ -342,7 +342,7 @@ async def get_allowed_accesses(customer_id: int):
       SELECT cu.customer_id, cu.name, cu.surname, cu.email, cu.telegram_id, ac.type, ac.end_time, ac.requested
       FROM "access" as ac 
       JOIN customer as cu ON ac.customer_id = cu.customer_id 
-      WHERE ac.allowed_customer_id = 1
+      WHERE ac.allowed_customer_id = $1
     '''
 
     rows = await conn.fetch(query, customer_id)
