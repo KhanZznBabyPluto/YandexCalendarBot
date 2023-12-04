@@ -1,5 +1,6 @@
 import asyncpg
 import datetime
+import pytz
 from tzlocal import get_localzone
 
 CUSTOMER_COLS = ['telegram_id', 'oauth_token', 'email', 'name', 'surname', 'login']
@@ -221,12 +222,12 @@ async def get_events(customer_id: int):
     rows = await conn.fetch(query, customer_id, datetime.datetime.now(datetime.timezone.utc))
 
     if len(rows) > 0:
-      local_timezone = get_localzone()
+      moscow_timezone = pytz.timezone('Europe/Moscow')
       res = [dict(row) for row in rows]
       for el in res:
-        el['event_start'] = el['event_start'].astimezone(local_timezone)
-        el['event_end'] = el['event_end'].astimezone(local_timezone)
-        el['last_modified'] = el['last_modified'].astimezone(local_timezone)
+        el['event_start'] = el['event_start'].replace(tzinfo=pytz.utc).astimezone(moscow_timezone)
+        el['event_end'] = el['event_end'].replace(tzinfo=pytz.utc).astimezone(moscow_timezone)
+        el['last_modified'] = el['last_modified'].replace(tzinfo=pytz.utc).astimezone(moscow_timezone)
       return res
     else:
       return []

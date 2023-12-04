@@ -44,6 +44,7 @@ async def update_if_changed(customer_id: int, email: str, username: str, passwor
     db_events = await get_events(customer_id)
 
     if len(ya_events) < len(db_events):
+        flag = False
         for db_event in db_events:
             is_in = False
             for ya_event in ya_events:
@@ -57,10 +58,11 @@ async def update_if_changed(customer_id: int, email: str, username: str, passwor
                             ya_event['end'],
                             ya_event['last_modified']
                         )
+                        flag = True
                     break
             if not is_in:
                 await delete_event(db_event['event_id'])
-        return True
+        return flag
 
     if len(ya_events) > len(db_events):
         for ya_event in ya_events:

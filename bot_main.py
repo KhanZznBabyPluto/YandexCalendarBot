@@ -138,7 +138,7 @@ async def check_calendar(message: types.Message, state: FSMContext):
             i = 1
             for event in info_dict:
                 name = event['event_name']
-                name = name.encode('latin-1').decode('utf-8')
+                # name = name.encode('latin-1').decode('utf-8')
                 start = event['event_start'].strftime("%H:%M")
                 end = event['event_end'].strftime("%H:%M")
                 string += f'{i}: {name} с {start} до {end}\n'
@@ -192,7 +192,8 @@ async def login_handler(message: types.Message, state: FSMContext):
               string = 'Список дел на сегодня:\n'
               i = 1
               for event in info_dict:
-                  name = event['event_name'].encode('latin-1').decode('utf-8')
+                  name = event['event_name']
+                  # name = name.encode('latin-1').decode('utf-8')
                   start = event['event_start'].strftime("%H:%M")
                   end = event['event_end'].strftime("%H:%M")
                   string += f'{i}: {name} с {start} до {end}\n'
@@ -216,16 +217,16 @@ async def check_own_access(message: types.Message):
             username = await get_username_by_id(user_id)
             if username:
                 if type_access == 'enc':
-                    string += f'{name} {surname}, {email}, {username}. Неполный доступ до {date}\n'
+                    string += f'{name} {surname}, {email}, @{username}.\nНеполный доступ до {date}\n'
                 elif type_access == 'full':
-                    string += f'{name} {surname}, {email}, {username}. Полный доступ до {date}\n'
+                    string += f'{name} {surname}, {email}, @{username}.\nПолный доступ до {date}\n'
                 else:
                     string = 'Вы никому доступа не давали'
             else:
                 if type_access == 'enc':
-                    string += f'{name} {surname}, {email}. Неполный доступ до {date}\n'
+                    string += f'{name} {surname}, {email}.\nНеполный доступ до {date}\n'
                 elif type_access == 'full':
-                    string += f'{name} {surname}, {email}. Полный доступ до {date}\n'
+                    string += f'{name} {surname}, {email}.\nПолный доступ до {date}\n'
                 else:
                     string = 'Вы никому доступа не давали'
         await message.answer(text=string)
@@ -315,7 +316,8 @@ async def handle_callback(callback_query: types.CallbackQuery, state: FSMContext
                         string = 'Список дел на сегодня:\n'
                         i = 1
                         for event in info_dict:
-                            name = event['event_name'].encode('latin-1').decode('utf-8')
+                            name = event['event_name']
+                            # name = name.encode('latin-1').decode('utf-8')
                             start = event['event_start'].strftime("%H:%M")
                             end = event['event_end'].strftime("%H:%M")
                             string += f'{i}: {name} с {start} до {end}\n'
@@ -551,7 +553,8 @@ async def updater_call():
                                     string = ''
                                     i = 1
                                     for event in info_dict:
-                                        name = event['event_name'].encode('latin-1').decode('utf-8')
+                                        name = event['event_name']
+                                        # name = name.encode('latin-1').decode('utf-8')
                                         start = event['event_start'].strftime("%H:%M")
                                         end = event['event_end'].strftime("%H:%M")
                                         string += f'{i}: {name} с {start} до {end}\n'
