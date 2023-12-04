@@ -125,7 +125,7 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 @dp.message_handler(commands=['Check_Calendar'])
 async def check_calendar(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
-    user_dict = await get_user_by_telegram(user_id)
+    user_dict = await get_user_by_telegram(int(user_id))
     if user_dict['password'] is None:
         await message.answer(text='Для того, чтобы получить календарь, перейдите по ссылке, установите пароль на календарь:', reply_markup=url_pass)
         await message.answer(text=f'Далее отправьте мне код для подтверждения')
@@ -159,7 +159,7 @@ async def cmd_cancel_code_2(message: types.Message, state: FSMContext):
 @dp.message_handler(state=ProfileStatesGroup.code_2)
 async def login_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
-    user_dict = await get_user_by_telegram(user_id)
+    user_dict = await get_user_by_telegram(int(user_id))
     user_hash = hashlib.md5(str(user_id).encode()).hexdigest()
     res = await get_event_yandex_info(user_dict['email'], user_dict['login'], message.text)
     if res is None:
@@ -322,8 +322,10 @@ async def no_access_handler(callback: types.CallbackQuery):
     await bot.send_message(chat_id=callback.message.chat.id, text='Вы не предоставили доступ')
     await bot.send_message(chat_id=user_id, text='Доступ не предоставлен')
     
-    user_cust = await get_user_by_telegram(user_id)['customer_id']
-    owner_cust = await get_user_by_telegram(callback.message.chat.id)['customer_id']
+    user_cust = await get_user_by_telegram(int(user_id))
+    user_cust = user_cust['customer_id']
+    owner_cust = await get_user_by_telegram(callback.message.chat.id)
+    owner_cust = owner_cust['customer_id']
 
     today = datetime.date.today()
     type_access = 'no'
@@ -354,8 +356,10 @@ async def one_day_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
 
     user_id, type_access, days = callback.data.split(':')[1:]
-    user_cust = await get_user_by_telegram(user_id)['customer_id']
-    owner_cust = await get_user_by_telegram(callback.message.chat.id)['customer_id']
+    user_cust = await get_user_by_telegram(int(user_id))
+    user_cust = user_cust['customer_id']
+    owner_cust = await get_user_by_telegram(int(callback.message.chat.id))
+    owner_cust = owner_cust['customer_id']
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
     await update_requested(owner_cust, user_cust)
@@ -374,8 +378,10 @@ async def seven_days_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
 
     user_id, type_access, days = callback.data.split(':')[1:]
-    user_cust = await get_user_by_telegram(user_id)['customer_id']
-    owner_cust = await get_user_by_telegram(callback.message.chat.id)['customer_id']
+    user_cust = await get_user_by_telegram(int(user_id))
+    user_cust = user_cust['customer_id']
+    owner_cust = await get_user_by_telegram(int(callback.message.chat.id))
+    owner_cust = owner_cust['customer_id']
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
     await update_requested(owner_cust, user_cust)
@@ -394,8 +400,10 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     
     user_id, type_access, days = callback.data.split(':')[1:]
-    user_cust = await get_user_by_telegram(user_id)['customer_id']
-    owner_cust = await get_user_by_telegram(callback.message.chat.id)['customer_id']
+    user_cust = await get_user_by_telegram(int(user_id))
+    user_cust = user_cust['customer_id']
+    owner_cust = await get_user_by_telegram(int(callback.message.chat.id))
+    owner_cust = owner_cust['customer_id']
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()
     await update_requested(owner_cust, user_cust)
@@ -414,8 +422,10 @@ async def thirty_days_handler(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     
     user_id, type_access, days = callback.data.split(':')[1:]
-    user_cust = await get_user_by_telegram(user_id)['customer_id']
-    owner_cust = await get_user_by_telegram(callback.message.chat.id)['customer_id']
+    user_cust = await get_user_by_telegram(int(user_id))
+    user_cust = user_cust['customer_id']
+    owner_cust = await get_user_by_telegram(int(callback.message.chat.id))
+    owner_cust = owner_cust['customer_id']
     end_dt = datetime.datetime.now() + datetime.timedelta(days=int(days))
     end_date = end_dt.date()   
     await update_requested(owner_cust, user_cust)
