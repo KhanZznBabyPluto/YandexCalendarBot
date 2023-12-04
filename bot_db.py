@@ -1,6 +1,5 @@
 import psycopg2
 import datetime
-import pytz
 from tzlocal import get_localzone
 
 CUSTOMER_COLS = ['telegram_id', 'oauth_token', 'email', 'name', 'surname', 'login']
@@ -177,39 +176,6 @@ def get_user_by_id(customer_id: int):
     print("Ошибка:", ex)
     return None
 
-
-def get_director():
-  conn = psycopg2.connect(
-    dbname=_dbname,
-    user=_user,
-    password=_password,
-    host=_host,
-    port=_port
-  )
-
-  cur = conn.cursor()
-  try:
-    query = "SELECT * FROM customer WHERE role = 'director'"
-
-    cur.execute(query)
-
-    rows = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    if len(rows) > 0:
-      return dict(zip(['customer_id'] + CUSTOMER_COLS + ['password'], rows[0]))
-    else:
-      return None
-
-  except psycopg2.Error as e:
-    print("Ошибка PostgreSQL:", e)
-    return None
-  except Exception as ex:
-    print("Ошибка:", ex)
-    return
-  
 
 def check_telegram_id(telegram_id: int):
   conn = psycopg2.connect(
