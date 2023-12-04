@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import requests
 import datetime
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.dispatcher import FSMContext
 from aiogram import types, executor, Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -482,9 +483,19 @@ async def scheduler():
         await asyncio.sleep(60)
 
 
+async def run_scheduler():
+  scheduler = AsyncIOScheduler()
+  scheduler.add_job(refresh_requests, 'cron', day_of_week='*', hour=0, minute=0, second=1)
+  scheduler.start()
+
+  while True:
+    await asyncio.sleep(1)
+
+
 async def on_startup(dispatcher):
     loop = asyncio.get_event_loop()
     loop.create_task(scheduler())
+    loop.create_task(run_scheduler())
 
 
 if __name__ == '__main__':
