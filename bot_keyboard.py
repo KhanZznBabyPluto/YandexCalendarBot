@@ -1,19 +1,17 @@
+from bot_db import *
 from bot_token import client_secret, client_id, redirect_uri
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 
 def get_kb(flag) -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     if flag:
-        kb.add(KeyboardButton('/Check_Calendar'))
-        kb.add(KeyboardButton('/Check_Accesses'))
-        kb.add(KeyboardButton('/Get_User_Calendar'))
-        kb.add(KeyboardButton('/Ask_for_Access'))
+        kb.add("/Check_Calendar", "/Check_Accesses")
+        kb.add("/Get_User_Calendar", "/Ask_for_Access")
     else:
-        kb.add(KeyboardButton('/Authorize'))
-    kb.add(KeyboardButton('/Cancel'))
-    
-    return kb
+        kb.add("/Authorize")
+    kb.add("/Cancel")
 
+    return kb
 
 def get_owner_choice_kb(user_id) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=1)
@@ -34,6 +32,40 @@ def get_day_choice_kb(user_id, type_access) -> InlineKeyboardButton:
     kb.add(button_1, button_2, button_3, button_4)
 
     return kb
+
+
+# def get_accesses_kb(accesses_dict):
+#     kb = InlineKeyboardMarkup(resize_keyboard=True)
+#     print(accesses_dict)
+#     for access in accesses_dict:
+#         email = access['email']
+#         kb.add(InlineKeyboardButton(text=f'{email}', callback_data=f'{email}'))
+#     return kb
+            
+
+def generate_inline_keyboard(buttons, current_page, buttons_per_page=10):
+    start_idx = (current_page - 1) * buttons_per_page
+    end_idx = start_idx + buttons_per_page
+    current_buttons = buttons[start_idx:end_idx]
+
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    for button in current_buttons:
+        keyboard.add(InlineKeyboardButton(text=button, callback_data=button))
+
+    navigation_buttons = []
+    if current_page > 1:
+        navigation_buttons.append(InlineKeyboardButton(text="Назад", callback_data=f"prev_page_{current_page}"))
+    if end_idx < len(buttons):
+        navigation_buttons.append(InlineKeyboardButton(text="Вперед", callback_data=f"next_page_{current_page}"))
+
+    if navigation_buttons:
+        keyboard.add(*navigation_buttons)
+
+    return keyboard
+
+def get_accesses_kb(accesses_dict, current_page=1):
+    buttons = [access['email'] for access in accesses_dict]
+    return generate_inline_keyboard(buttons, current_page)
 
 
 url = InlineKeyboardMarkup()
