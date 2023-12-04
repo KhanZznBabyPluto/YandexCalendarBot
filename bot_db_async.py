@@ -334,6 +334,37 @@ async def get_accesses(customer_id: int):
     await conn.close()
 
 
+async def get_accesses(customer_id: int):
+  try:
+    conn = await connect_to_db()
+
+    query = '''
+      SELECT cu.customer_id, cu.name, cu.surname, cu.email, cu.telegram_id, ac.type, ac.end_time, ac.requested
+      FROM "access" as ac 
+      JOIN customer as cu ON ac.customer_id = cu.customer_id 
+      WHERE ac.allowed_customer_id = 1
+    '''
+
+    rows = await conn.fetch(query, customer_id)
+
+    if len(rows) > 0:
+      columns = ['allowed_customer_id', 'name', 'surname', 'email', 'telegram_id', 'type', 'end_time', 'requested']
+      return [dict(zip(columns, row)) for row in rows]
+    else:
+      return None
+  
+  except asyncpg.exceptions.PostgresError as e:
+    print("Ошибка PostgreSQL:", e)
+    return None
+  
+  except Exception as ex:
+    print("Ошибка:", ex)
+    return None
+  
+  finally:
+    await conn.close()
+
+
 async def update_requested(customer_id: int, allowed_customer_id: int):
   try:
     conn = await connect_to_db()
