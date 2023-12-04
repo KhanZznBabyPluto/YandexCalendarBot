@@ -334,7 +334,7 @@ async def get_accesses(customer_id: int):
     await conn.close()
 
 
-async def get_accesses(customer_id: int):
+async def get_allowed_accesses(customer_id: int):
   try:
     conn = await connect_to_db()
 
