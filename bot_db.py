@@ -420,7 +420,7 @@ def get_accesses(customer_id: int):
     return None
   
 
-def get_accesses(customer_id: int):
+def get_accesses_allowed(customer_id: int):
   conn = psycopg2.connect(
     dbname=_dbname,
     user=_user,
