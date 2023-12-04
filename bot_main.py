@@ -48,10 +48,6 @@ Text_for_Ask = """
     Вам отправили запрос на доступ\nОжидайте ответ от пользователя"""
 
 
-async def on_startup(dp):
-    print('Bot has been started')
-    asyncio.create_task(scheduler())
-
 
 @dp.message_handler(commands=['Cancel'])
 async def cmd_cancel(message: types.Message):
