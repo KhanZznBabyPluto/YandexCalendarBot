@@ -270,63 +270,6 @@ async def email_handler(message: types.Message, state: FSMContext):
 
 
 
-@dp.message_handler(commands='Get_User_Calendar')
-async def other_user_calendar(message: types.Message):
-    user_dict = await get_user_by_telegram(message.from_user.id)
-    user_cust = user_dict['customer_id']
-    accesses_dict = await get_accesses_allowed(user_cust)
-    if accesses_dict is not None:
-        await message.answer(text='Чей календарь вы хотите получить?', reply_markup=get_accesses_kb(accesses_dict))
-    else:
-        await message.answer(text='У вас нет доступа ни к чьему календарю.')
-
-
-@dp.callback_query_handler(lambda callback_query: True)
-async def handle_callback(callback_query: types.CallbackQuery, state: FSMContext):
-    await bot.answer_callback_query(callback_query.id)
-    user_id = callback_query.from_user.id
-    chosen_email = callback_query.data
-    rec_dict = await get_customer_by_email(chosen_email)
-    if rec_dict is not None:
-        user_dict = await get_user_by_telegram(user_id)
-        if user_dict['password'] is None:
-            await bot.send_message(chat_id=user_id, text='Пользователь не добавил свой календарь')
-            await state.finish()
-        else:
-            access = await check_access(rec_dict['customer_id'], user_dict['customer_id'])
-            end = access['end_time']
-            if datetime.datetime.now() > end:
-                await bot.send_message(chat_id=user_id, text='Ваш доступ истёк. Запросите ещё раз через - <b>/Ask_for_Access</b>', parse_mode='HTML')
-                await state.finish()
-            else:
-                info_dict = await get_events(rec_dict['customer_id'])
-                await update_requested(rec_dict['customer_id'], user_dict['customer_id'])
-                if len(info_dict) != 0:
-                    if access['type'] == 'enc':
-                        string = ''
-                        i = 1
-                        for event in info_dict:
-                            start = event['event_start'].strftime("%H:%M")
-                            end = event['event_end'].strftime("%H:%M")
-                            string += f'{i}: Занят с {start} до {end}\n'
-                            i += 1
-                        await bot.send_message(chat_id=user_id, text=string)
-                        await state.finish()
-                    elif access['type'] == 'full':
-                        string = 'Список дел на сегодня:\n'
-                        i = 1
-                        for event in info_dict:
-                            name = event['event_name']
-                            # name = name.encode('latin-1').decode('utf-8')
-                            start = event['event_start'].strftime("%H:%M")
-                            end = event['event_end'].strftime("%H:%M")
-                            string += f'{i}: {name} с {start} до {end}\n'
-                            i += 1
-                        await bot.send_message(chat_id=user_id, text=string)
-                        await state.finish()
-                else:
-                    await bot.send_message(chat_id=user_id, text='У пользователя запланированных дел нет')
-                    await state.finish()
 
 
 
@@ -425,6 +368,7 @@ async def encrypted_handler(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text_startswith='full_access:')
 async def full_access_handler(callback: types.CallbackQuery):
+    print('asdasdasdasd')
     await bot.edit_message_reply_markup(chat_id = callback.message.chat.id, message_id = callback.message.message_id, reply_markup = None)
     user_id = callback.data.split(":")[1]
     await bot.send_message(chat_id=callback.message.chat.id, text=f'На сколько дней вы хотите дать доступ?', reply_markup=get_day_choice_kb(user_id, 'full'))
@@ -519,6 +463,63 @@ async def thirty_days_handler(callback: types.CallbackQuery):
         await add_info('access', ACCESS_COLS, [owner_cust, user_cust, type_access, end_date])
 
 
+@dp.message_handler(commands='Get_User_Calendar')
+async def other_user_calendar(message: types.Message):
+    user_dict = await get_user_by_telegram(message.from_user.id)
+    user_cust = user_dict['customer_id']
+    accesses_dict = await get_accesses_allowed(user_cust)
+    if accesses_dict is not None:
+        await message.answer(text='Чей календарь вы хотите получить?', reply_markup=get_accesses_kb(accesses_dict))
+    else:
+        await message.answer(text='У вас нет доступа ни к чьему календарю.')
+
+
+@dp.callback_query_handler(lambda callback_query: True)
+async def handle_callback(callback_query: types.CallbackQuery, state: FSMContext):
+    await bot.answer_callback_query(callback_query.id)
+    user_id = callback_query.from_user.id
+    chosen_email = callback_query.data
+    rec_dict = await get_customer_by_email(chosen_email)
+    if rec_dict is not None:
+        user_dict = await get_user_by_telegram(user_id)
+        if user_dict['password'] is None:
+            await bot.send_message(chat_id=user_id, text='Пользователь не добавил свой календарь')
+            await state.finish()
+        else:
+            access = await check_access(rec_dict['customer_id'], user_dict['customer_id'])
+            end = access['end_time']
+            if datetime.datetime.now() > end:
+                await bot.send_message(chat_id=user_id, text='Ваш доступ истёк. Запросите ещё раз через - <b>/Ask_for_Access</b>', parse_mode='HTML')
+                await state.finish()
+            else:
+                info_dict = await get_events(rec_dict['customer_id'])
+                await update_requested(rec_dict['customer_id'], user_dict['customer_id'])
+                if len(info_dict) != 0:
+                    if access['type'] == 'enc':
+                        string = ''
+                        i = 1
+                        for event in info_dict:
+                            start = event['event_start'].strftime("%H:%M")
+                            end = event['event_end'].strftime("%H:%M")
+                            string += f'{i}: Занят с {start} до {end}\n'
+                            i += 1
+                        await bot.send_message(chat_id=user_id, text=string)
+                        await state.finish()
+                    elif access['type'] == 'full':
+                        string = 'Список дел на сегодня:\n'
+                        i = 1
+                        for event in info_dict:
+                            name = event['event_name']
+                            # name = name.encode('latin-1').decode('utf-8')
+                            start = event['event_start'].strftime("%H:%M")
+                            end = event['event_end'].strftime("%H:%M")
+                            string += f'{i}: {name} с {start} до {end}\n'
+                            i += 1
+                        await bot.send_message(chat_id=user_id, text=string)
+                        await state.finish()
+                else:
+                    await bot.send_message(chat_id=user_id, text='У пользователя запланированных дел нет')
+                    await state.finish()
 
 async def updater_call():
     customers = await get_customers()
