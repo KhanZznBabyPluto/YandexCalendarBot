@@ -81,6 +81,3 @@ url_pass = InlineKeyboardMarkup()
 pass_url = 'https://id.yandex.ru/security/app-passwords'
 url_pass_button = InlineKeyboardButton(text="Перейти по ссылке", url=pass_url)
 url_pass.add(url_pass_button)
-
-reactivate_kb = ReplyKeyboardMarkup(resize_keyboard=True)
-reactivate_kb.add(KeyboardButton('/Reactivate_bot'))

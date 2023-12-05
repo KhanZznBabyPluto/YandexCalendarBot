@@ -12,7 +12,7 @@ from bot_db import *
 from bot_func import *
 from bot_yapi import *
 from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
-from bot_keyboard import url, url_pass, reactivate_kb, get_kb, get_owner_choice_kb, get_day_choice_kb, get_accesses_kb
+from bot_keyboard import url, url_pass, get_kb, get_owner_choice_kb, get_day_choice_kb, get_accesses_kb
 
 storage = MemoryStorage()
 bot = Bot(TOKEN_API)
