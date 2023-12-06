@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import requests
 import datetime
+import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.dispatcher import FSMContext
 from aiogram import types, executor, Bot, Dispatcher
@@ -13,6 +14,8 @@ from bot_func_async import *
 from bot_yapi_async import *
 from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
 from bot_keyboard import url, url_pass, get_kb, get_owner_choice_kb, get_day_choice_kb, get_accesses_kb
+
+logging.basicConfig(filename='bot.log', level=logging.INFO)
 
 storage = MemoryStorage()
 bot = Bot(TOKEN_API)
@@ -676,7 +679,7 @@ async def get_username_by_id(user_id):
         username = user.user.username
         return username
     except Exception as e:
-        print(f"Error getting username: {e}")
+        logging.error(f"Error getting username: {e}")
         return None
 
 

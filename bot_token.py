@@ -10,9 +10,3 @@ _user = 'test'
 _password = 'test'
 _host = '213.139.209.8'
 _port = '5432'
-
-#example:
-# email = 'imsobaka01@yandex.kz'
-# username = 'imsobaka01'
-# password = 'qwskexkijcawqtie' # - он заправшивается у пользователя. Сделать его нужно в настройках яндекс аккаунта -> сделать пароль приложения и отправить в чат
-# print(get_event_info(email, username, password))

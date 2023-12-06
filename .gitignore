@@ -1,0 +1,5 @@
+*.log
+bot_db.py
+bot_func_py
+bot_schedule.py
+bot_yapi.py

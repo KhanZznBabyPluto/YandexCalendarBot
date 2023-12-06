@@ -1,4 +1,5 @@
 import re
+import logging
 from bot_db_async import *
 from bot_yapi_async import *
 
@@ -28,7 +29,7 @@ def is_valid_password(email: str, username: str, password: str):
     caldav.DAVClient(url, username=username, password=password)
     return True
   except caldav.lib.error.AuthorizationError as e:
-    print(f'Неправильный пароль приложения у пользователя {username}')
+    logging.error(f'Неправильный пароль приложения у пользователя {username}')
     return False
 
 
