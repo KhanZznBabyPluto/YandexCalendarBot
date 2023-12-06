@@ -31,6 +31,62 @@ def is_valid_password(email: str, username: str, password: str):
     print(f'Неправильный пароль приложения у пользователя {username}')
     return False
 
+def drop_array_el(array, id_name: str, id):
+    return [el for el in array if el[id_name] != id]
+
+async def update_help(ya_events, db_events, customer_id):
+    res = False
+
+    for db_event in db_events:
+        is_in = False
+        del_event_id = db_event['event_id']
+        for ya_event in ya_events:
+            if ya_event['uid'] == del_event_id:
+                is_in = True
+                if ya_event['last_modified'] != db_event['last_modified']:
+                    await update_event(
+                        ya_event['uid'],
+                        ya_event['event'],
+                        ya_event['start'],
+                        ya_event['end'],
+                        ya_event['last_modified']
+                    )
+                    res = True
+                db_events = [el for el in db_event if el['event_id'] != del_event_id]
+                ya_events = [el for el in db_event if el['uid'] != del_event_id]
+                break
+        if not is_in:
+            await delete_event(del_event_id)
+            db_events = [el for el in db_event if el['event_id'] != del_event_id]
+            res = True
+    
+    for ya_event in ya_events:
+        is_in = False
+        for db_event in db_events:
+            if ya_event['uid'] == db_event['event_id']:
+                is_in = True
+                if ya_event['last_modified'] != db_event['last_modified']:
+                    await update_event(
+                        ya_event['uid'],
+                        ya_event['event'],
+                        ya_event['start'],
+                        ya_event['end'],
+                        ya_event['last_modified']
+                    )
+                    res = True
+                break
+        if not is_in:
+            await add_info('event', EVENT_COLS, [
+                ya_event['uid'],
+                customer_id,
+                ya_event['event'],
+                ya_event['start'],
+                ya_event['end'],
+                ya_event['last_modified']
+            ])
+            res = True
+    return res
+        
 
 
 async def update_if_changed(customer_id: int, email: str, username: str, password: str):
@@ -43,56 +99,14 @@ async def update_if_changed(customer_id: int, email: str, username: str, passwor
 
     db_events = await get_events(customer_id)
 
-    if len(ya_events) < len(db_events):
-        for db_event in db_events:
-            is_in = False
-            for ya_event in ya_events:
-                if ya_event['uid'] == db_event['event_id']:
-                    is_in = True
-                    if ya_event['last_modified'] != db_event['last_modified']:
-                        await update_event(
-                            ya_event['uid'],
-                            ya_event['event'],
-                            ya_event['start'],
-                            ya_event['end'],
-                            ya_event['last_modified']
-                        )
-                    break
-            if not is_in:
-                await delete_event(db_event['event_id'])
-        return True
+    res = False
 
-    if len(ya_events) > len(db_events):
+    for db_event in db_events:
+        is_in = False
+        del_event_id = db_event['event_id']
         for ya_event in ya_events:
-            is_in = False
-            for db_event in db_events:
-                if ya_event['uid'] == db_event['event_id']:
-                    is_in = True
-                    if ya_event['last_modified'] != db_event['last_modified']:
-                        await update_event(
-                            ya_event['uid'],
-                            ya_event['event'],
-                            ya_event['start'],
-                            ya_event['end'],
-                            ya_event['last_modified']
-                        )
-                    break
-            if not is_in:
-                await add_info('event', EVENT_COLS, [
-                    ya_event['uid'],
-                    customer_id,
-                    ya_event['event'],
-                    ya_event['start'],
-                    ya_event['end'],
-                    ya_event['last_modified']
-                ])
-        return True
-
-    flag = False
-
-    for ya_event in ya_events:
-        for db_event in db_events:
-            if ya_event['uid'] == db_event['event_id']:
+            if ya_event['uid'] == del_event_id:
+                is_in = True
                 if ya_event['last_modified'] != db_event['last_modified']:
                     await update_event(
                         ya_event['uid'],
@@ -101,7 +115,100 @@ async def update_if_changed(customer_id: int, email: str, username: str, passwor
                         ya_event['end'],
                         ya_event['last_modified']
                     )
-                    flag = True
+                    res = True
+                db_events = [el for el in db_events if el['event_id'] != del_event_id]
+                ya_events = [el for el in ya_events if el['uid'] != del_event_id]
                 break
+        if not is_in:
+            await delete_event(del_event_id)
+            db_events = [el for el in db_events if el['event_id'] != del_event_id]
+            res = True
+    
+    for ya_event in ya_events:
+        is_in = False
+        for db_event in db_events:
+            if ya_event['uid'] == db_event['event_id']:
+                is_in = True
+                if ya_event['last_modified'] != db_event['last_modified']:
+                    await update_event(
+                        ya_event['uid'],
+                        ya_event['event'],
+                        ya_event['start'],
+                        ya_event['end'],
+                        ya_event['last_modified']
+                    )
+                    res = True
+                break
+        if not is_in:
+            await add_info('event', EVENT_COLS, [
+                ya_event['uid'],
+                customer_id,
+                ya_event['event'],
+                ya_event['start'],
+                ya_event['end'],
+                ya_event['last_modified']
+            ])
+            res = True
+    return res
+    # if len(ya_events) < len(db_events):
+    #     for db_event in db_events:
+    #         is_in = False
+    #         for ya_event in ya_events:
+    #             if ya_event['uid'] == db_event['event_id']:
+    #                 is_in = True
+    #                 if ya_event['last_modified'] != db_event['last_modified']:
+    #                     await update_event(
+    #                         ya_event['uid'],
+    #                         ya_event['event'],
+    #                         ya_event['start'],
+    #                         ya_event['end'],
+    #                         ya_event['last_modified']
+    #                     )
+    #                 break
+    #         if not is_in:
+    #             await delete_event(db_event['event_id'])
+    #     return True
 
-    return flag
+    # if len(ya_events) > len(db_events):
+    #     for ya_event in ya_events:
+    #         is_in = False
+    #         for db_event in db_events:
+    #             if ya_event['uid'] == db_event['event_id']:
+    #                 is_in = True
+    #                 if ya_event['last_modified'] != db_event['last_modified']:
+    #                     await update_event(
+    #                         ya_event['uid'],
+    #                         ya_event['event'],
+    #                         ya_event['start'],
+    #                         ya_event['end'],
+    #                         ya_event['last_modified']
+    #                     )
+    #                 break
+    #         if not is_in:
+    #             await add_info('event', EVENT_COLS, [
+    #                 ya_event['uid'],
+    #                 customer_id,
+    #                 ya_event['event'],
+    #                 ya_event['start'],
+    #                 ya_event['end'],
+    #                 ya_event['last_modified']
+    #             ])
+    #     return True
+
+    # flag = False
+
+    # for ya_event in ya_events:
+    #     for db_event in db_events:
+    #         if ya_event['uid'] == db_event['event_id']:
+    #             if ya_event['last_modified'] != db_event['last_modified']:
+    #                 await update_event(
+    #                     ya_event['uid'],
+    #                     ya_event['event'],
+    #                     ya_event['start'],
+    #                     ya_event['end'],
+    #                     ya_event['last_modified']
+    #                 )
+    #                 flag = True
+    #             break
+
+    # return flag
