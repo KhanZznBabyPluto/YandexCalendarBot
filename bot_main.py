@@ -211,24 +211,28 @@ async def check_own_access(message: types.Message):
     user_dict = await get_user_by_telegram(message.from_user.id)
     accesses_dict = await get_accesses(user_dict['customer_id'])
     if accesses_dict is not None:
-        string = 'Вот список доступов:\n'
+        flag = 1
         for access in accesses_dict:
-            name, surname, email, type_access, date, user_id = access['name'], access['surname'], access['email'], access['type'], access['end_time'], access['telegram_id']
-            username = await get_username_by_id(user_id)
-            if username:
-                if type_access == 'enc':
-                    string += f'{name} {surname}, {email}, @{username}.\nНеполный доступ до {date}\n'
-                elif type_access == 'full':
-                    string += f'{name} {surname}, {email}, @{username}.\nПолный доступ до {date}\n'
+            if access['type'] != 'no':
+                flag = 0
+                break
+        if not flag:
+            string = 'Вот список доступов:\n'
+            for access in accesses_dict:
+                name, surname, email, type_access, date, user_id = access['name'], access['surname'], access['email'], access['type'], access['end_time'], access['telegram_id']
+                username = await get_username_by_id(user_id)
+                if username:
+                    if type_access == 'enc':
+                        string += f'{name} {surname}, {email}, @{username}.\nНеполный доступ до {date}\n'
+                    elif type_access == 'full':
+                        string += f'{name} {surname}, {email}, @{username}.\nПолный доступ до {date}\n'
                 else:
-                    string = 'Вы никому доступа не давали'
-            else:
-                if type_access == 'enc':
-                    string += f'{name} {surname}, {email}.\nНеполный доступ до {date}\n'
-                elif type_access == 'full':
-                    string += f'{name} {surname}, {email}.\nПолный доступ до {date}\n'
-                else:
-                    string = 'Вы никому доступа не давали'
+                    if type_access == 'enc':
+                        string += f'{name} {surname}, {email}.\nНеполный доступ до {date}\n'
+                    elif type_access == 'full':
+                        string += f'{name} {surname}, {email}.\nПолный доступ до {date}\n'
+        else:
+            string = 'Вы никому доступа не давали'
         await message.answer(text=string)
     else:
         await message.answer(text='Вы никому доступа не давали')
@@ -290,7 +294,7 @@ async def no_access_handler(callback: types.CallbackQuery):
         my_name, my_surname, my_email = my_dict['name'], my_dict['surname'], my_dict['email']
 
         await bot.send_message(chat_id=callback.message.chat.id, text='Вы закрыли доступ')
-        await bot.send_message(chat_id=accesser_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} закрыл доступ')
+        await bot.send_message(chat_id=accesser_id, text=f'Пользователь {my_name} {my_surname}, {my_email} закрыл  вашдоступ')
             
         await update_access_end_time(my_cust, accesser_cust, type_access, today)
 
@@ -356,10 +360,10 @@ async def one_day_handler(callback: types.CallbackQuery):
 
         if type_access == 'enc':
             await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы изменили доступ на неполный до {end_date}')
-            await bot.send_message(chat_id=user_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} изменил доступ на неполный до {end_date}')
+            await bot.send_message(chat_id=user_id, text=f'Пользователь {my_name} {my_surname}, {my_email} изменил ваш доступ на неполный до {end_date}')
         else:
             await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы изменили доступ на полный до {end_date}')
-            await bot.send_message(chat_id=user_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} изменил доступ на полный до {end_date}')
+            await bot.send_message(chat_id=user_id, text=f'Пользователь {my_name} {my_surname}, {my_email} изменил ваш доступ на полный до {end_date}')
         
         await update_access_end_time(my_cust, accesser_cust, type_access, end_date)
 
@@ -399,10 +403,10 @@ async def seven_days_handler(callback: types.CallbackQuery):
 
         if type_access == 'enc':
             await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы изменили доступ на неполный до {end_date}')
-            await bot.send_message(chat_id=user_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} изменил доступ на неполный до {end_date}')
+            await bot.send_message(chat_id=user_id, text=f'Пользователь {my_name} {my_surname}, {my_email} изменил ваш доступ на неполный до {end_date}')
         else:
             await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы изменили доступ на полный до {end_date}')
-            await bot.send_message(chat_id=user_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} изменил доступ на полный до {end_date}')
+            await bot.send_message(chat_id=user_id, text=f'Пользователь {my_name} {my_surname}, {my_email} изменил ваш доступ на полный до {end_date}')
             
         await update_access_end_time(my_cust, accesser_cust, type_access, end_date)
 
@@ -442,10 +446,10 @@ async def fourteen_days_handler(callback: types.CallbackQuery):
 
         if type_access == 'enc':
             await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы изменили доступ на неполный до {end_date}')
-            await bot.send_message(chat_id=user_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} изменил доступ на неполный до {end_date}')
+            await bot.send_message(chat_id=user_id, text=f'Пользователь {my_name} {my_surname}, {my_email} изменил ваш доступ на неполный до {end_date}')
         else:
             await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы изменили доступ на полный до {end_date}')
-            await bot.send_message(chat_id=user_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} изменил доступ на полный до {end_date}')
+            await bot.send_message(chat_id=user_id, text=f'Пользователь {my_name} {my_surname}, {my_email} изменил ваш доступ на полный до {end_date}')
             
         await update_access_end_time(my_cust, accesser_cust, type_access, end_date)
 
@@ -485,10 +489,10 @@ async def thirty_days_handler(callback: types.CallbackQuery):
 
         if type_access == 'enc':
             await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы изменили доступ на неполный до {end_date}')
-            await bot.send_message(chat_id=user_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} изменил доступ на неполный до {end_date}')
+            await bot.send_message(chat_id=user_id, text=f'Пользователь {my_name} {my_surname}, {my_email} изменил ваш доступ на неполный до {end_date}')
         else:
             await bot.send_message(chat_id=callback.message.chat.id, text=f'Вы изменили доступ на полный до {end_date}')
-            await bot.send_message(chat_id=user_id, text=f'Вам пользователь {my_name} {my_surname}, {my_email} изменил доступ на полный до {end_date}')
+            await bot.send_message(chat_id=user_id, text=f'Пользователь {my_name} {my_surname}, {my_email} изменил ваш доступ на полный до {end_date}')
             
         await update_access_end_time(my_cust, accesser_cust, type_access, end_date)
 
@@ -515,10 +519,18 @@ async def thirty_days_handler(callback: types.CallbackQuery):
 async def change_access(message: types.Message):
     user_dict = await get_user_by_telegram(message.from_user.id)
     accesses_dict = await get_accesses(user_dict['customer_id'])
-    if accesses_dict is None:
-        await message.answer(text='Вы не можете изменить доступы, так как вы доступ никому не давали')
+    if accesses_dict is not None:
+        flag = 1
+        for access in accesses_dict:
+            if access['type'] != 'no':
+                flag = 0
+                break
+        if not flag:
+            await message.answer(text='Чей доступ вы хотите изменить?', reply_markup=get_accesses_kb(accesses_dict, 'change_access'))
+        else:
+            await message.answer(text='Вы не можете изменить доступы, так как вы доступ никому не давали')    
     else:
-        await message.answer(text='Чей доступ вы хотите изменить?', reply_markup=get_accesses_kb(accesses_dict, 'change_access'))
+        await message.answer(text='Вы не можете изменить доступы, так как вы доступ никому не давали')
 
 
 
@@ -549,11 +561,11 @@ async def handle_callback(callback_query: types.CallbackQuery, state: FSMContext
     rec_dict = await get_customer_by_email(chosen_email)
     rec_name, rec_surname, rec_email = rec_dict['name'], rec_dict['surname'], rec_dict['email']
     if cmd == 'change_access':
-        await bot.send_message(chat_id=user_id, text=f'Какой доступ вы хотите дать пользователю {rec_name}, {rec_surname}, {rec_email}?', reply_markup=get_owner_choice_kb(user_id, cmd, chosen_email))
+        await bot.send_message(chat_id=user_id, text=f'Какой доступ вы хотите дать пользователю {rec_name} {rec_surname}, {rec_email}?', reply_markup=get_owner_choice_kb(user_id, cmd, chosen_email))
     else:
         if rec_dict is not None:
             user_dict = await get_user_by_telegram(user_id)
-            if user_dict['password'] is None:
+            if rec_dict['password'] is None:
                 await bot.send_message(chat_id=user_id, text='Пользователь не добавил свой календарь')
                 await state.finish()
             else:
@@ -631,9 +643,9 @@ async def updater_call():
                                         end = event['event_end'].strftime("%H:%M")
                                         string += f'{i}: {name} с {start} до {end}\n'
                                         i += 1
-                                await bot.send_message(chat_id=user_id, text=f'События у пользователя {customer_name} {customer_surname} {customer_email} были изменены.\nВот новые:\n{string}')
+                                await bot.send_message(chat_id=user_id, text=f'События у пользователя {customer_name} {customer_surname}, {customer_email} были изменены.\nВот новые:\n{string}')
                             else:
-                                await bot.send_message(chat_id=user_id, text=f'События у пользователя {customer_name} {customer_surname} {customer_email} были изменены. У пользователя запланированных дел нет')
+                                await bot.send_message(chat_id=user_id, text=f'События у пользователя {customer_name} {customer_surname}, {customer_email} были изменены. У пользователя запланированных дел нет')
 
 
 async def scheduler():
