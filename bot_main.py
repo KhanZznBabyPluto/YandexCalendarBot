@@ -155,7 +155,7 @@ async def check_calendar(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(commands=['Cancel'], state=ProfileStatesGroup.code_2)
-async def cmd_cancel_code_2(message: types.Message):
+async def cmd_cancel_code_2(message: types.Message, state: FSMContext):
     await message.answer('Дейтсвие отменено!')
     # await UserStates.INACTIVE.set()
     user_id = message.from_user.id
@@ -163,6 +163,7 @@ async def cmd_cancel_code_2(message: types.Message):
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
+    await state.finish()
     # await UserStates.ACTIVE.set()
 
 
@@ -249,7 +250,7 @@ async def ask_for_access(message: types.Message):
 
 
 @dp.message_handler(commands=['Cancel'], state=ProfileStatesGroup.email_rec)
-async def cmd_cancel_email(message: types.Message):
+async def cmd_cancel_email(message: types.Message, state: FSMContext):
     await message.answer('Дейтсвие отменено!')
     # await UserStates.INACTIVE.set()
     user_id = message.from_user.id
@@ -257,6 +258,7 @@ async def cmd_cancel_email(message: types.Message):
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
+    await state.finish()
     # await UserStates.ACTIVE.set()
 
 
