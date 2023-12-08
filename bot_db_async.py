@@ -4,6 +4,8 @@ import pytz
 import logging
 from tzlocal import get_localzone
 
+logging.basicConfig(filename='bot.log', level=logging.INFO)
+
 CUSTOMER_COLS = ['telegram_id', 'oauth_token', 'email', 'name', 'surname', 'login']
 ACCESS_COLS = ['customer_id', 'allowed_customer_id', 'type', 'end_time']
 EVENT_COLS = ['event_id', 'customer_id', 'event_name', 'event_start', 'event_end', 'last_modified']
@@ -55,7 +57,7 @@ async def add_info(table_name: str, columns: list, values: list):
   try:
     query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['$' + str(i+1) for i in range(len(values))])})"
     await conn.execute(query, *values)
-    logging.error("Данные успешно добавлены в таблицу", table_name)
+    logging.info("Данные успешно добавлены в таблицу", table_name)
 
   except asyncpg.exceptions.PostgresError as e:
     logging.error("Ошибка PostgreSQL:", e)

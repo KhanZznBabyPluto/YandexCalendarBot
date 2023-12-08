@@ -2,6 +2,8 @@ from bot_db_async import *
 from bot_token import client_secret, client_id, redirect_uri
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 
+logging.basicConfig(filename='bot.log', level=logging.INFO)
+
 def get_kb(flag) -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     if flag:

@@ -4,6 +4,8 @@ import caldav
 import ics
 import datetime
 
+logging.basicConfig(filename='bot.log', level=logging.INFO)
+
 async def get_event_yandex_info(email: str, username: str, password: str):
     res = []
 

@@ -3,6 +3,7 @@ import logging
 from bot_db_async import *
 from bot_yapi_async import *
 
+logging.basicConfig(filename='bot.log', level=logging.INFO)
 
 '''
 def update_if_changed(customer_id) - апдейтит записи в events если 
