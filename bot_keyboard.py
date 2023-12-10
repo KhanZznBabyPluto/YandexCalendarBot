@@ -2,6 +2,8 @@ from bot_db import *
 from bot_token import client_secret, client_id, redirect_uri
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 
+logging.basicConfig(filename='bot.log', level=logging.INFO)
+
 def get_kb(flag) -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     if flag:
@@ -33,15 +35,6 @@ def get_day_choice_kb(user_id, type_access, cmd) -> InlineKeyboardButton:
     kb.add(button_1, button_2, button_3, button_4)
 
     return kb
-
-
-# def get_accesses_kb(accesses_dict):
-#     kb = InlineKeyboardMarkup(resize_keyboard=True)
-#     print(accesses_dict)
-#     for access in accesses_dict:
-#         email = access['email']
-#         kb.add(InlineKeyboardButton(text=f'{email}', callback_data=f'{email}'))
-#     return kb
             
 
 def generate_inline_keyboard(buttons, cmd, current_page, buttons_per_page=10):

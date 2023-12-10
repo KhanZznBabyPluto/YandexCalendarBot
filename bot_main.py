@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import requests
 import datetime
+import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.dispatcher import FSMContext
 from aiogram import types, executor, Bot, Dispatcher
@@ -13,6 +14,8 @@ from bot_func import *
 from bot_yapi import *
 from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
 from bot_keyboard import url, url_pass, get_kb, get_owner_choice_kb, get_day_choice_kb, get_accesses_kb
+
+logging.basicConfig(filename='bot.log', level=logging.INFO)
 
 storage = MemoryStorage()
 bot = Bot(TOKEN_API)
@@ -58,13 +61,13 @@ Text_Wrong_Password = """
 @dp.message_handler(commands=['Cancel'])
 async def cmd_cancel(message: types.Message):
     await message.answer('Дейтсвие отменено!')
-    await UserStates.INACTIVE.set()
+    # await UserStates.INACTIVE.set()
     user_id = message.from_user.id
     if await check_telegram_id(user_id):
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
-    await UserStates.ACTIVE.set()
+    # await UserStates.ACTIVE.set()
 
 
 @dp.message_handler(commands=['Start'])
@@ -152,15 +155,16 @@ async def check_calendar(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(commands=['Cancel'], state=ProfileStatesGroup.code_2)
-async def cmd_cancel_code_2(message: types.Message):
+async def cmd_cancel_code_2(message: types.Message, state: FSMContext):
     await message.answer('Дейтсвие отменено!')
-    await UserStates.INACTIVE.set()
+    # await UserStates.INACTIVE.set()
     user_id = message.from_user.id
     if await check_telegram_id(user_id):
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
-    await UserStates.ACTIVE.set()
+    await state.finish()
+    # await UserStates.ACTIVE.set()
 
 
 @dp.message_handler(state=ProfileStatesGroup.code_2)
@@ -246,15 +250,16 @@ async def ask_for_access(message: types.Message):
 
 
 @dp.message_handler(commands=['Cancel'], state=ProfileStatesGroup.email_rec)
-async def cmd_cancel_email(message: types.Message):
+async def cmd_cancel_email(message: types.Message, state: FSMContext):
     await message.answer('Дейтсвие отменено!')
-    await UserStates.INACTIVE.set()
+    # await UserStates.INACTIVE.set()
     user_id = message.from_user.id
     if await check_telegram_id(user_id):
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
-    await UserStates.ACTIVE.set()
+    await state.finish()
+    # await UserStates.ACTIVE.set()
 
 
 @dp.message_handler(state=ProfileStatesGroup.email_rec)
@@ -676,7 +681,7 @@ async def get_username_by_id(user_id):
         username = user.user.username
         return username
     except Exception as e:
-        print(f"Error getting username: {e}")
+        logging.error(f"Error getting username: {e}")
         return None
 
 

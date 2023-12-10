@@ -1,7 +1,10 @@
 import aiohttp
+import logging
 import caldav
 import ics
 import datetime
+
+logging.basicConfig(filename='bot.log', level=logging.INFO)
 
 async def get_event_yandex_info(email: str, username: str, password: str):
     res = []
@@ -38,10 +41,10 @@ async def get_event_yandex_info(email: str, username: str, password: str):
                                     tmp['last_modified'] = event.last_modified.datetime
                                     res.append(tmp)
                             else:
-                                print(f'Проблемы с доступом к календарю по url: {event_url}\nПользователь: {username}.\nКод ошибки:', event_resp.status)
+                                logging.error(f'Проблемы с доступом к календарю по url: {event_url}\nПользователь: {username}.\nКод ошибки:', event_resp.status)
                 else:
-                    print(f'Проблемы с доступом к календарям по url: {url}\nПользователь: {username}.\nКод ошибки:', resp.status)
+                    logging.error(f'Проблемы с доступом к календарям по url: {url}\nПользователь: {username}.\nКод ошибки:', resp.status)
         return res
     except caldav.lib.error.AuthorizationError as e:
-        print(f'Неправильный пароль приложения у пользователя {username}')
+        logging.error(f'Неправильный пароль приложения у пользователя {username}')
         return None
