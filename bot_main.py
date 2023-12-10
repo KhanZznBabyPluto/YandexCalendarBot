@@ -659,9 +659,32 @@ async def scheduler():
         await asyncio.sleep(60)
 
 
+async def daily_scheduler():
+    customers = await get_customers()
+    for customer in customers:
+        customer_id = customer['customer_id']
+        customer_telegram = customer['telegram_id']
+        accesses = get_accesses_allowed(customer_id)
+        tommorow = datetime.datetime.now() + datetime.timedelta(days=1)
+        if accesses is not None:
+            for access in accesses:
+                if access['end_time'] == tommorow:
+                    owner_id = access['customer_id']
+                    owner_dict = await get_user_by_id(owner_id)
+                    name, surname, telegram, email = owner_dict['name'], owner_dict['surname'], owner_dict['telegram_id'], owner_dict['email']
+                    nick = await get_username_by_id(telegram)
+                    if nick is None:
+                        await bot.send_message(chat_id=customer_telegram, text=f'Предупреждаем, ваш доступ к календарю {name} {surname}, {email} истекает завтра. Не забудьте его продлить!')
+                    else:
+                        await bot.send_message(chat_id=customer_telegram, text=f'Предупреждаем, ваш доступ к календарю {nick}, {name} {surname}, {email} истекает завтра. Не забудьте его продлить!')
+
+
+
+
 async def run_scheduler():
   scheduler = AsyncIOScheduler()
   scheduler.add_job(refresh_requests, 'cron', day_of_week='*', hour=0, minute=0, second=1)
+  scheduler.add_job(daily_scheduler, 'cron', hour=12)
   scheduler.start()
 
   while True:

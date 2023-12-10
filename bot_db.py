@@ -8,6 +8,7 @@ from bot_token import CUSTOMER_COLS, ACCESS_COLS, EVENT_COLS, _dbname, _user, _p
 
 logging.basicConfig(filename='bot.log', level=logging.INFO)
 
+
 async def connect_to_db():
   return await asyncpg.connect(
     database=_dbname,
