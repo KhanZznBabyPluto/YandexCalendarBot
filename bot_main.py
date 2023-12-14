@@ -15,7 +15,14 @@ from bot_yapi_async import *
 from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
 from bot_keyboard import url, url_pass, get_kb, get_owner_choice_kb, get_day_choice_kb, get_accesses_kb
 
-logging.basicConfig(filename='bot.log', level=logging.INFO)
+logging.getLogger().handlers = []
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler('bot.log', encoding='utf-8')
+
+file_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(file_handler)
 
 storage = MemoryStorage()
 bot = Bot(TOKEN_API)
