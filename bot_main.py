@@ -15,7 +15,14 @@ from bot_yapi import *
 from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
 from bot_keyboard import url, url_pass, get_kb, get_owner_choice_kb, get_day_choice_kb, get_accesses_kb
 
-logging.basicConfig(filename='bot.log', level=logging.INFO)
+logging.getLogger().handlers = []
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler('bot.log', encoding='utf-8')
+
+file_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(file_handler)
 
 storage = MemoryStorage()
 bot = Bot(TOKEN_API)
@@ -609,6 +616,29 @@ async def handle_callback(callback_query: types.CallbackQuery, state: FSMContext
                         await bot.send_message(chat_id=user_id, text='У пользователя запланированных дел нет')
                         await state.finish()
 
+
+
+async def daily_scheduler():
+    customers = await get_customers()
+    for customer in customers:
+        customer_id = customer['customer_id']
+        customer_telegram = customer['telegram_id']
+        accesses = get_accesses_allowed(customer_id)
+        tommorow = datetime.datetime.now() + datetime.timedelta(days=1)
+        if accesses is not None:
+            for access in accesses:
+                if access['end_time'] == tommorow:
+                    owner_id = access['customer_id']
+                    owner_dict = await get_user_by_id(owner_id)
+                    name, surname, telegram, email = owner_dict['name'], owner_dict['surname'], owner_dict['telegram_id'], owner_dict['email']
+                    nick = await get_username_by_id(telegram)
+                    if nick is None:
+                        await bot.send_message(chat_id=customer_telegram, text=f'Предупреждаем, ваш доступ к календарю {name} {surname}, {email} истекает завтра. Не забудьте его продлить!')
+                    else:
+                        await bot.send_message(chat_id=customer_telegram, text=f'Предупреждаем, ваш доступ к календарю {nick}, {name} {surname}, {email} истекает завтра. Не забудьте его продлить!')
+
+
+
 async def updater_call():
     customers = await get_customers()
     for customer in customers:
@@ -659,32 +689,9 @@ async def scheduler():
         await asyncio.sleep(60)
 
 
-async def daily_scheduler():
-    customers = await get_customers()
-    for customer in customers:
-        customer_id = customer['customer_id']
-        customer_telegram = customer['telegram_id']
-        accesses = get_accesses_allowed(customer_id)
-        tommorow = datetime.datetime.now() + datetime.timedelta(days=1)
-        if accesses is not None:
-            for access in accesses:
-                if access['end_time'] == tommorow:
-                    owner_id = access['customer_id']
-                    owner_dict = await get_user_by_id(owner_id)
-                    name, surname, telegram, email = owner_dict['name'], owner_dict['surname'], owner_dict['telegram_id'], owner_dict['email']
-                    nick = await get_username_by_id(telegram)
-                    if nick is None:
-                        await bot.send_message(chat_id=customer_telegram, text=f'Предупреждаем, ваш доступ к календарю {name} {surname}, {email} истекает завтра. Не забудьте его продлить!')
-                    else:
-                        await bot.send_message(chat_id=customer_telegram, text=f'Предупреждаем, ваш доступ к календарю {nick}, {name} {surname}, {email} истекает завтра. Не забудьте его продлить!')
-
-
-
-
 async def run_scheduler():
   scheduler = AsyncIOScheduler()
   scheduler.add_job(refresh_requests, 'cron', day_of_week='*', hour=0, minute=0, second=1)
-  scheduler.add_job(daily_scheduler, 'cron', hour=12)
   scheduler.start()
 
   while True:

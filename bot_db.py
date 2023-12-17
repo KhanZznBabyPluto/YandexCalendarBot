@@ -1,13 +1,28 @@
 import asyncpg
 import datetime
-import pytz
 import logging
+import pytz
 from tzlocal import get_localzone
 
-from bot_token import CUSTOMER_COLS, ACCESS_COLS, EVENT_COLS, _dbname, _user, _password, _host, _port
+logging.getLogger().handlers = []
 
-logging.basicConfig(filename='bot.log', level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+file_handler = logging.FileHandler('bot.log', encoding='utf-8')
+
+file_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(file_handler)
+
+CUSTOMER_COLS = ['telegram_id', 'oauth_token', 'email', 'name', 'surname', 'login']
+ACCESS_COLS = ['customer_id', 'allowed_customer_id', 'type', 'end_time']
+EVENT_COLS = ['event_id', 'customer_id', 'event_name', 'event_start', 'event_end', 'last_modified']
+
+# Параметры подключения к базе данных
+_dbname = 'calendar-bot-new'
+_user = 'test'
+_password = 'test'
+_host = '213.139.209.8'
+_port = '5432'
 
 async def connect_to_db():
   return await asyncpg.connect(
@@ -32,11 +47,11 @@ async def print_table(table_name: str):
       print(row)
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
 
   except Exception as e:
-    logging.error('Ошибка:', e)
+    logging.error('Ошибка: %s', e)
     return None
 
   finally:
@@ -49,13 +64,13 @@ async def add_info(table_name: str, columns: list, values: list):
   try:
     query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['$' + str(i+1) for i in range(len(values))])})"
     await conn.execute(query, *values)
-    logging.info("Данные успешно добавлены в таблицу", table_name)
+    logging.info("Данные успешно добавлены в таблицу %s", table_name)
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
 
   except Exception as e:
-    logging.error('Ошибка:', e)
+    logging.error('Ошибка: %s', e)
 
   finally:
     await conn.close()
@@ -77,11 +92,11 @@ async def get_customers():
           return []
       
     except asyncpg.exceptions.PostgresError as e:
-      logging.error("Ошибка PostgreSQL:", e)
+      logging.error("Ошибка PostgreSQL: %s", e)
       return None
 
     except Exception as e:
-      logging.error("Ошибка:", e)
+      logging.error("Ошибка: %s", e)
       return None
 
     finally:
@@ -102,11 +117,11 @@ async def get_user_by_telegram(telegram_id: int):
       return None
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
 
   except Exception as e:
-    logging.error("Ошибка:", e)
+    logging.error("Ошибка: %s", e)
     return None
 
   finally:
@@ -127,11 +142,11 @@ async def get_user_by_id(customer_id: int):
       return None
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
 
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
 
   finally:
@@ -148,11 +163,11 @@ async def check_telegram_id(telegram_id: int):
     return len(result) > 0
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
 
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
 
   finally:
@@ -168,11 +183,11 @@ async def add_password(customer_id: int, password: str):
     return True
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return False
 
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return False
 
   finally:
@@ -195,11 +210,11 @@ async def get_customer_by_email(email: str):
       return None
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
 
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   
   finally:
@@ -228,11 +243,11 @@ async def get_events(customer_id: int):
       return []
     
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
   
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   
   finally:
@@ -248,11 +263,11 @@ async def update_event(event_id: str, event_name: str, event_start, event_end, e
     await conn.execute(query, event_name, event_start, event_end, event_last_modified, event_id)
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
   
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   
   finally:
@@ -267,10 +282,10 @@ async def delete_timeout_events():
 
     await conn.execute(query, datetime.datetime.now(datetime.timezone.utc))
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   finally:
     await conn.close()
@@ -285,11 +300,11 @@ async def delete_event(event_id: str):
     await conn.execute(query, event_id)
 
   except asyncpg.exceptions.PostgresError as e:
-      logging.error("Ошибка PostgreSQL:", e)
+      logging.error("Ошибка PostgreSQL: %s", e)
       return None
   
   except Exception as ex:
-      logging.error("Ошибка:", ex)
+      logging.error("Ошибка: %s", ex)
       return None
   
   finally:
@@ -319,11 +334,11 @@ async def get_accesses(customer_id: int):
       return None
   
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
   
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   
   finally:
@@ -350,11 +365,11 @@ async def get_accesses_allowed(customer_id: int):
       return None
   
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
   
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   
   finally:
@@ -370,11 +385,11 @@ async def update_requested(customer_id: int, allowed_customer_id: int):
     await conn.execute(query, customer_id, allowed_customer_id)
   
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
   
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   
   finally:
@@ -403,11 +418,11 @@ async def update_access_end_time(customer_id: int, allowed_customer_id: int, typ
     await conn.execute(query, type_access, end_time, customer_id, allowed_customer_id)
   
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
   
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   
   finally:
@@ -425,11 +440,11 @@ async def refresh_requests():
     await conn.execute(query)
 
   except asyncpg.exceptions.PostgresError as e:
-    logging.error("Ошибка PostgreSQL:", e)
+    logging.error("Ошибка PostgreSQL: %s", e)
     return None
   
   except Exception as ex:
-    logging.error("Ошибка:", ex)
+    logging.error("Ошибка: %s", ex)
     return None
   
   finally:

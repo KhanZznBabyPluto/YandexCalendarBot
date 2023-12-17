@@ -3,7 +3,14 @@ import logging
 from bot_db import *
 from bot_yapi import *
 
-logging.basicConfig(filename='bot.log', level=logging.INFO)
+logging.getLogger().handlers = []
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler('bot.log', encoding='utf-8')
+
+file_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(file_handler)
 
 '''
 def update_if_changed(customer_id) - апдейтит записи в events если 

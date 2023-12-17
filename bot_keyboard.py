@@ -1,8 +1,16 @@
+import logging
 from bot_db import *
 from bot_token import client_secret, client_id, redirect_uri
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 
-logging.basicConfig(filename='bot.log', level=logging.INFO)
+logging.getLogger().handlers = []
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler('bot.log', encoding='utf-8')
+
+file_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(file_handler)
 
 def get_kb(flag) -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
