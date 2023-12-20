@@ -345,21 +345,21 @@ async def get_accesses(customer_id: int):
     await conn.close()
 
 
-async def get_accesses_allowed(customer_id: int):
+async def get_accesses_allowed(allowed_customer_id: int):
   try:
     conn = await connect_to_db()
 
     query = '''
       SELECT cu.customer_id, cu.name, cu.surname, cu.email, cu.telegram_id, ac.type, ac.end_time, ac.requested
-      FROM "access" as ac 
+      FROM "access" as ac
       JOIN customer as cu ON ac.customer_id = cu.customer_id 
       WHERE ac.allowed_customer_id = $1
     '''
 
-    rows = await conn.fetch(query, customer_id)
+    rows = await conn.fetch(query, allowed_customer_id)
 
     if len(rows) > 0:
-      columns = ['allowed_customer_id', 'name', 'surname', 'email', 'telegram_id', 'type', 'end_time', 'requested']
+      columns = ['customer_id', 'name', 'surname', 'email', 'telegram_id', 'type', 'end_time', 'requested']
       return [dict(zip(columns, row)) for row in rows]
     else:
       return None

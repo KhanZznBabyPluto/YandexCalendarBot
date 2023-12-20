@@ -628,7 +628,7 @@ async def daily_scheduler():
         tommorow = datetime.datetime.now() + datetime.timedelta(days=1)
         if accesses is not None:
             for access in accesses:
-                if access['end_time'] == tommorow:
+                if access['end_time'].date() == tommorow.date():
                     print('Заканчивается доступ')
                     owner_id = access['customer_id']
                     owner_dict = await get_user_by_id(owner_id)
@@ -688,13 +688,12 @@ async def updater_call():
 async def scheduler():
     while True:
         await updater_call()
-        await daily_scheduler()
         await asyncio.sleep(60)
-
 
 async def run_scheduler():
   scheduler = AsyncIOScheduler()
   scheduler.add_job(refresh_requests, 'cron', day_of_week='*', hour=0, minute=0, second=1)
+  scheduler.add_job(daily_scheduler, 'cron', day_of_week='*', hour=12, minute=0, second=0)
   scheduler.start()
 
   while True:
