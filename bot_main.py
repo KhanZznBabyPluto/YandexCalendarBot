@@ -629,6 +629,7 @@ async def daily_scheduler():
         if accesses is not None:
             for access in accesses:
                 if access['end_time'] == tommorow:
+                    print('Заканчивается доступ')
                     owner_id = access['customer_id']
                     owner_dict = await get_user_by_id(owner_id)
                     name, surname, telegram, email = owner_dict['name'], owner_dict['surname'], owner_dict['telegram_id'], owner_dict['email']
