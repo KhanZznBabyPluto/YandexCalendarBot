@@ -12,7 +12,7 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from bot_db import *
 from bot_func import *
 from bot_yapi import *
-from bot_token import TOKEN_API, client_id, client_secret, redirect_uri
+from bot_token import TOKEN_API, TOKEN_API_TEST, client_id, client_secret, redirect_uri
 from bot_keyboard import url, url_pass, get_kb, get_owner_choice_kb, get_day_choice_kb, get_accesses_kb
 
 logging.getLogger().handlers = []
@@ -25,7 +25,8 @@ file_handler.setLevel(logging.INFO)
 logging.getLogger().addHandler(file_handler)
 
 storage = MemoryStorage()
-bot = Bot(TOKEN_API)
+# bot = Bot(TOKEN_API)
+bot = Bot(TOKEN_API_TEST)
 dp = Dispatcher(bot, storage=storage)
 
 users_calls = {}
@@ -283,8 +284,8 @@ async def email_handler(message: types.Message, state: FSMContext):
             await message.answer(text=Text_for_Ask)
             await state.finish()
         else:
-            await message.answer(text='Данный пользователь не зарегистрирован в боте')
-            await state.finish()
+            await message.answer(text='Данный пользователь не зарегистрирован в боте. Введите почту снова или нажмите <b>/Cancel</b>', parse_mode='HTML')
+            await ProfileStatesGroup.email_rec.set()
 
 
 
@@ -623,7 +624,7 @@ async def daily_scheduler():
     for customer in customers:
         customer_id = customer['customer_id']
         customer_telegram = customer['telegram_id']
-        accesses = get_accesses_allowed(customer_id)
+        accesses = await get_accesses_allowed(customer_id)
         tommorow = datetime.datetime.now() + datetime.timedelta(days=1)
         if accesses is not None:
             for access in accesses:
@@ -686,6 +687,7 @@ async def updater_call():
 async def scheduler():
     while True:
         await updater_call()
+        await daily_scheduler()
         await asyncio.sleep(60)
 
 

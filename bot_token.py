@@ -5,6 +5,9 @@ redirect_uri = 'https://oauth.yandex.ru/verification_code'
 CUSTOMER_COLS = ['telegram_id', 'oauth_token', 'email', 'name', 'surname', 'login']
 ACCESS_COLS = ['customer_id', 'allowed_customer_id', 'type', 'end_time']
 EVENT_COLS = ['event_id', 'customer_id', 'event_name', 'event_start', 'event_end', 'last_modified']
+TOKEN_API_TEST = '6830189372:AAHGHyzjbT2O35X5_SVl0BVlMRzpu9sgt8w'
+
+
 
 # Параметры подключения к базе данных
 _dbname = 'calendar-bot-new'
