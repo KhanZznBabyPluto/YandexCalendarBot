@@ -25,8 +25,8 @@ file_handler.setLevel(logging.INFO)
 logging.getLogger().addHandler(file_handler)
 
 storage = MemoryStorage()
-# bot = Bot(TOKEN_API)
-bot = Bot(TOKEN_API_TEST)
+bot = Bot(TOKEN_API)
+# bot = Bot(TOKEN_API_TEST)
 dp = Dispatcher(bot, storage=storage)
 
 users_calls = {}
