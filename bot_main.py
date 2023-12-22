@@ -25,8 +25,8 @@ file_handler.setLevel(logging.INFO)
 logging.getLogger().addHandler(file_handler)
 
 storage = MemoryStorage()
-bot = Bot(TOKEN_API)
-# bot = Bot(TOKEN_API_TEST)
+# bot = Bot(TOKEN_API)
+bot = Bot(TOKEN_API_TEST)
 dp = Dispatcher(bot, storage=storage)
 
 users_calls = {}
@@ -50,7 +50,7 @@ Action_for_user = """
     Давайте перейдём к календарю.\nЧтобы получить свой - <b>/Check_Calendar</b>\nЧтобы проверить предоставленные доступы - <b>/Check_Accesses</b>\nЧтобы запросить доступ к чужому календарю, нажмите <b>/Ask_for_access</b>\nЧтобы получить календарь другого пользователя - <b>/Get_User_Calendar</b>\nЧтобы изменить предоставленный доступ - <b>/Change_Access</b>"""
 
 Action_for_non_auth = """
-    Вы не авторизованы, поэтому я не могу запросить доступ к каледнарю.\nПожалуйста авторизуйтесь - <b>/Authorize</b> или остановите бота - <b>/Cancel</b>"""
+    Вы не авторизованы.\nВозможно база данных была очищена по техническим причинам.\nПожалуйста авторизуйтесь - <b>/Authorize</b> или остановите бота - <b>/Cancel</b>"""
 
 Action_for_reset = """
     Вы прервали работу Бота!\nБот приостановлен, для перезапуска нажмите кнопку ниже ↓"""
@@ -69,13 +69,11 @@ Text_Wrong_Password = """
 @dp.message_handler(commands=['Cancel'])
 async def cmd_cancel(message: types.Message):
     await message.answer('Дейтсвие отменено!')
-    # await UserStates.INACTIVE.set()
     user_id = message.from_user.id
     if await check_telegram_id(user_id):
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
-    # await UserStates.ACTIVE.set()
 
 
 @dp.message_handler(commands=['Start'])
@@ -137,42 +135,44 @@ async def code_handler(message: types.Message, state: FSMContext) -> None:
 @dp.message_handler(commands=['Check_Calendar'])
 async def check_calendar(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
-    user_dict = await get_user_by_telegram(user_id)
-    if user_dict['password'] is None:
-        await message.answer(text='Для того, чтобы получить календарь, перейдите по ссылке, установите пароль на календарь:', reply_markup=url_pass)
-        await message.answer(text=f'Далее отправьте мне код для подтверждения')
-        await ProfileStatesGroup.code_2.set()
+    if not await check_telegram_id(user_id):
+        await message.answer(text=Action_for_non_auth, parse_mode='HTML', reply_markup=get_kb(0))
+        await state.finish()
     else:
-        info_dict = await get_events(user_dict['customer_id'])
-        if len(info_dict) != 0:
-            string = 'Список дел на сегодня:\n'
-            i = 1
-            for event in info_dict:
-                name = event['event_name']
-                # name = name.encode('latin-1').decode('utf-8')
-                start = event['event_start'].strftime("%H:%M")
-                end = event['event_end'].strftime("%H:%M")
-                string += f'{i}: {name} с {start} до {end}\n'
-                i += 1
-            await message.answer(text=string)
-            await state.finish()
+        user_dict = await get_user_by_telegram(user_id)
+        if user_dict['password'] is None:
+            await message.answer(text='Для того, чтобы получить календарь, перейдите по ссылке, установите пароль на календарь:', reply_markup=url_pass)
+            await message.answer(text=f'Далее отправьте мне код для подтверждения')
+            await ProfileStatesGroup.code_2.set()
         else:
-            await message.answer(text='Запланированных дел нет')
-            await state.finish()
+            info_dict = await get_events(user_dict['customer_id'])
+            if len(info_dict) != 0:
+                string = 'Список дел на сегодня:\n'
+                i = 1
+                for event in info_dict:
+                    name = event['event_name']
+                    # name = name.encode('latin-1').decode('utf-8')
+                    start = event['event_start'].strftime("%H:%M")
+                    end = event['event_end'].strftime("%H:%M")
+                    string += f'{i}: {name} с {start} до {end}\n'
+                    i += 1
+                await message.answer(text=string)
+                await state.finish()
+            else:
+                await message.answer(text='Запланированных дел нет')
+                await state.finish()
 
 
 
 @dp.message_handler(commands=['Cancel'], state=ProfileStatesGroup.code_2)
 async def cmd_cancel_code_2(message: types.Message, state: FSMContext):
     await message.answer('Дейтсвие отменено!')
-    # await UserStates.INACTIVE.set()
     user_id = message.from_user.id
     if await check_telegram_id(user_id):
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
     await state.finish()
-    # await UserStates.ACTIVE.set()
 
 
 @dp.message_handler(state=ProfileStatesGroup.code_2)
@@ -220,39 +220,46 @@ async def login_handler(message: types.Message, state: FSMContext):
 
 @dp.message_handler(commands=['Check_Accesses'])
 async def check_own_access(message: types.Message):
-    user_dict = await get_user_by_telegram(message.from_user.id)
-    accesses_dict = await get_accesses(user_dict['customer_id'])
-    if accesses_dict is not None:
-        flag = 1
-        for access in accesses_dict:
-            if access['type'] != 'no':
-                flag = 0
-                break
-        if not flag:
-            string = 'Вот список доступов:\n'
-            for access in accesses_dict:
-                name, surname, email, type_access, date, user_id = access['name'], access['surname'], access['email'], access['type'], access['end_time'], access['telegram_id']
-                username = await get_username_by_id(user_id)
-                if username:
-                    if type_access == 'enc':
-                        string += f'{name} {surname}, {email}, @{username}.\nНеполный доступ до {date}\n'
-                    elif type_access == 'full':
-                        string += f'{name} {surname}, {email}, @{username}.\nПолный доступ до {date}\n'
-                else:
-                    if type_access == 'enc':
-                        string += f'{name} {surname}, {email}.\nНеполный доступ до {date}\n'
-                    elif type_access == 'full':
-                        string += f'{name} {surname}, {email}.\nПолный доступ до {date}\n'
-        else:
-            string = 'Вы никому доступа не давали'
-        await message.answer(text=string)
+    user_id = message.from_user.id
+    if not await check_telegram_id(user_id):
+        await message.answer(text=Action_for_non_auth, parse_mode='HTML', reply_markup=get_kb(0))
     else:
-        await message.answer(text='Вы никому доступа не давали')
+        user_dict = await get_user_by_telegram(user_id)
+        accesses_dict = await get_accesses(user_dict['customer_id'])
+        if accesses_dict is not None:
+            flag = 1
+            for access in accesses_dict:
+                if access['type'] != 'no':
+                    flag = 0
+                    break
+            if not flag:
+                string = 'Вот список доступов:\n'
+                for access in accesses_dict:
+                    name, surname, email, type_access, date, user_id = access['name'], access['surname'], access['email'], access['type'], access['end_time'], access['telegram_id']
+                    username = await get_username_by_id(user_id)
+                    if username:
+                        if type_access == 'enc':
+                            string += f'{name} {surname}, {email}, @{username}.\nНеполный доступ до {date}\n'
+                        elif type_access == 'full':
+                            string += f'{name} {surname}, {email}, @{username}.\nПолный доступ до {date}\n'
+                    else:
+                        if type_access == 'enc':
+                            string += f'{name} {surname}, {email}.\nНеполный доступ до {date}\n'
+                        elif type_access == 'full':
+                            string += f'{name} {surname}, {email}.\nПолный доступ до {date}\n'
+            else:
+                string = 'Вы никому доступа не давали'
+            await message.answer(text=string)
+        else:
+            await message.answer(text='Вы никому доступа не давали')
 
 
 
 @dp.message_handler(commands=['Ask_for_Access'])
 async def ask_for_access(message: types.Message):
+    user_id = message.from_user.id
+    if not await check_telegram_id(user_id):
+        await message.answer(text=Action_for_non_auth, parse_mode='HTML', reply_markup=get_kb(0))
     await message.answer(text='К чьему календарю вы хотите получить доступ? Отправьте почту')
     await ProfileStatesGroup.email_rec.set()
 
@@ -260,14 +267,12 @@ async def ask_for_access(message: types.Message):
 @dp.message_handler(commands=['Cancel'], state=ProfileStatesGroup.email_rec)
 async def cmd_cancel_email(message: types.Message, state: FSMContext):
     await message.answer('Дейтсвие отменено!')
-    # await UserStates.INACTIVE.set()
     user_id = message.from_user.id
     if await check_telegram_id(user_id):
         await message.answer(text = Action_for_user, parse_mode='HTML', reply_markup=get_kb(1))
     else:
         await message.answer(text = Action_for_start, parse_mode='HTML', reply_markup=get_kb(0))
     await state.finish()
-    # await UserStates.ACTIVE.set()
 
 
 @dp.message_handler(state=ProfileStatesGroup.email_rec)
@@ -317,9 +322,11 @@ async def no_access_handler(callback: types.CallbackQuery):
         await bot.send_message(chat_id=user_id, text='Доступ не предоставлен')
         
         user_cust = await get_user_by_telegram(user_id)
-        user_cust = user_cust['customer_id']
+        if user_cust is not None:
+            user_cust = user_cust['customer_id']
         owner_cust = await get_user_by_telegram(callback.message.chat.id)
-        owner_cust = owner_cust['customer_id']
+        if owner_cust is not None:
+            owner_cust = owner_cust['customer_id']
 
 
         access = await check_access(owner_cust, user_cust)
@@ -530,40 +537,48 @@ async def thirty_days_handler(callback: types.CallbackQuery):
 
 @dp.message_handler(commands=['Change_Access'])
 async def change_access(message: types.Message):
-    user_dict = await get_user_by_telegram(message.from_user.id)
-    accesses_dict = await get_accesses(user_dict['customer_id'])
-    if accesses_dict is not None:
-        flag = 1
-        for access in accesses_dict:
-            if access['type'] != 'no':
-                flag = 0
-                break
-        if not flag:
-            await message.answer(text='Чей доступ вы хотите изменить?', reply_markup=get_accesses_kb(accesses_dict, 'change_access'))
-        else:
-            await message.answer(text='Вы не можете изменить доступы, так как вы доступ никому не давали')    
+    user_id = message.from_user.id
+    if not await check_telegram_id(user_id):
+        await message.answer(text=Action_for_non_auth, parse_mode='HTML', reply_markup=get_kb(0))
     else:
-        await message.answer(text='Вы не можете изменить доступы, так как вы доступ никому не давали')
+        user_dict = await get_user_by_telegram(message.from_user.id)
+        accesses_dict = await get_accesses(user_dict['customer_id'])
+        if accesses_dict is not None:
+            flag = 1
+            for access in accesses_dict:
+                if access['type'] != 'no':
+                    flag = 0
+                    break
+            if not flag:
+                await message.answer(text='Чей доступ вы хотите изменить?', reply_markup=get_accesses_kb(accesses_dict, 'change_access'))
+            else:
+                await message.answer(text='Вы не можете изменить доступы, так как вы доступ никому не давали')    
+        else:
+            await message.answer(text='Вы не можете изменить доступы, так как вы доступ никому не давали')
 
 
 
 @dp.message_handler(commands='Get_User_Calendar')
 async def other_user_calendar(message: types.Message):
-    user_dict = await get_user_by_telegram(message.from_user.id)
-    user_cust = user_dict['customer_id']
-    accesses_dict = await get_accesses_allowed(user_cust)
-    if accesses_dict is not None:
-        flag = 1
-        for access in accesses_dict:
-            if access['type'] != 'no':
-                flag = 0
-                break
-        if not flag:
-            await message.answer(text='Чей календарь вы хотите получить?', reply_markup=get_accesses_kb(accesses_dict, 'give_access'))
+    user_id = message.from_user.id
+    if not await check_telegram_id(user_id):
+        await message.answer(text=Action_for_non_auth, parse_mode='HTML', reply_markup=get_kb(0))
+    else:
+        user_dict = await get_user_by_telegram(user_id)
+        user_cust = user_dict['customer_id']
+        accesses_dict = await get_accesses_allowed(user_cust)
+        if accesses_dict is not None:
+            flag = 1
+            for access in accesses_dict:
+                if access['type'] != 'no':
+                    flag = 0
+                    break
+            if not flag:
+                await message.answer(text='Чей календарь вы хотите получить?', reply_markup=get_accesses_kb(accesses_dict, 'give_access'))
+            else:
+                await message.answer(text='У вас нет доступа ни к чьему календарю.')
         else:
             await message.answer(text='У вас нет доступа ни к чьему календарю.')
-    else:
-        await message.answer(text='У вас нет доступа ни к чьему календарю.')
 
 
 @dp.callback_query_handler(lambda callback_query: True)
