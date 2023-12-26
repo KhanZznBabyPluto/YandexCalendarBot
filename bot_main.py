@@ -9,9 +9,9 @@ from aiogram import types, executor, Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
-from bot_db import *
-from bot_func import *
-from bot_yapi import *
+from bot_db_async import *
+from bot_func_async import *
+from bot_yapi_async import *
 from bot_token import TOKEN_API, TOKEN_API_TEST, client_id, client_secret, redirect_uri
 from bot_keyboard import url, url_pass, get_kb, get_owner_choice_kb, get_day_choice_kb, get_accesses_kb
 
