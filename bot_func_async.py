@@ -1,7 +1,7 @@
 import re
 import logging
-from bot_db import *
-from bot_yapi import *
+from bot_db_async import *
+from bot_yapi_async import *
 
 logging.getLogger().handlers = []
 

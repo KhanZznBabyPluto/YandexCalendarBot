@@ -25,8 +25,8 @@ file_handler.setLevel(logging.INFO)
 logging.getLogger().addHandler(file_handler)
 
 storage = MemoryStorage()
-bot = Bot(TOKEN_API)
-# bot = Bot(TOKEN_API_TEST)
+# bot = Bot(TOKEN_API)
+bot = Bot(TOKEN_API_TEST)
 dp = Dispatcher(bot, storage=storage)
 
 users_calls = {}
@@ -47,7 +47,7 @@ Action_for_start = """
     Дорбро пожаловать!\nЧтобы привязать ваш аккаунт, нажмите - <b>/Authorize</b>"""
 
 Action_for_user = """
-    Давайте перейдём к календарю.\nЧтобы получить свой - <b>/Check_Calendar</b>\nЧтобы проверить предоставленные доступы - <b>/Check_Accesses</b>\nЧтобы запросить доступ к чужому календарю, нажмите <b>/Ask_for_access</b>\nЧтобы получить календарь другого пользователя - <b>/Get_User_Calendar</b>\nЧтобы изменить предоставленный доступ - <b>/Change_Access</b>"""
+    Давайте перейдём к календарю.\nЧтобы просмотреть свой - <b>/Check_Calendar</b>\nЧтобы проверить предоставленные доступы - <b>/Check_Accesses</b>\nЧтобы запросить доступ к каледнарю другого пользователя <b>/Ask_for_access</b>\nЧтобы получить календарь другого пользователя - <b>/Get_User_Calendar</b>\nЧтобы изменить предоставленный доступ - <b>/Change_Access</b>"""
 
 Action_for_non_auth = """
     Вы не авторизованы.\nВозможно база данных была очищена по техническим причинам.\nПожалуйста авторизуйтесь - <b>/Authorize</b> или остановите бота - <b>/Cancel</b>"""

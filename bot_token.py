@@ -10,7 +10,7 @@ TOKEN_API_TEST = '6830189372:AAHGHyzjbT2O35X5_SVl0BVlMRzpu9sgt8w'
 
 
 # Параметры подключения к базе данных
-_dbname = 'calendar-bot-new'
+_dbname = 'calendar-bot-test'
 _user = 'test'
 _password = 'test'
 _host = '213.139.209.8'

@@ -1,5 +1,5 @@
 import logging
-from bot_db import *
+from bot_db_async import *
 from bot_token import client_secret, client_id, redirect_uri
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 

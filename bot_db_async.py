@@ -18,7 +18,7 @@ ACCESS_COLS = ['customer_id', 'allowed_customer_id', 'type', 'end_time']
 EVENT_COLS = ['event_id', 'customer_id', 'event_name', 'event_start', 'event_end', 'last_modified']
 
 # Параметры подключения к базе данных
-_dbname = 'calendar-bot-new'
+_dbname = 'calendar-bot-test'
 _user = 'test'
 _password = 'test'
 _host = '213.139.209.8'

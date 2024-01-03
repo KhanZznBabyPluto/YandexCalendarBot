@@ -1,6 +1,6 @@
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from bot_db import refresh_requests
+from bot_db_async import refresh_requests
 
 async def run_scheduler():
   scheduler = AsyncIOScheduler()
